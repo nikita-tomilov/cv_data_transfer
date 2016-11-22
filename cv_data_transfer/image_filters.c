@@ -6,6 +6,11 @@
 
 #include "image_filters.h"
 
+int abs(int x)
+{
+	return x < 0 ? -1 * x : x;
+}
+
 /* used to get pixel from image */
 Pixel_t getPixel(IplImage* img, int x, int y)
 {
@@ -61,6 +66,23 @@ Pixel_t calculateBTresholdPixel(IplImage* img, int x, int y, int argc, int* argv
 	cur.b = 0;
 	cur.g = 0;
 	cur.r = 0;
+	return cur;
+}
+
+/* used to make treshold on RGB in required radius */
+/* uses four arguments - r, g, b and radius in which point still counts */
+Pixel_t calculateTresholdByRGBValue(IplImage* img, int x, int y, int argc, int* argv)
+{
+	Pixel_t cur = getPixel(img, x, y);
+	Pixel_t ret;
+	ret.b = 0;
+	ret.g = 0;
+	ret.r = 0;
+	
+	if (abs(cur.r - argv[0]) > argv[3]) return ret;
+	if (abs(cur.g - argv[1]) > argv[4]) return ret;
+	if (abs(cur.b - argv[2]) > argv[5]) return ret;
+
 	return cur;
 }
 
