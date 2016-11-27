@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "image_circles.h"
+#include "image_filters.h"
 
 
 static int square(int x)
@@ -76,4 +77,43 @@ Circle_t* getUniqCircles(Circle_t* inputArray, int inputAmount, int minRadius, i
 	}
 	*outputAmount = n;
 	return tmpArray;
+}
+
+/* used to define circles on image for their easier usage */
+
+void calculateCircles(Circle_t* array, Circle_t* top_left, Circle_t* top_right, Circle_t* bottom_left, Circle_t* sync, Circle_t* data)
+{
+	Circle_t middle;
+	size_t i;
+	middle.x = ((array[0].x) + (array[1].x) + (array[2].x)) / 3.0f;
+	middle.y = ((array[0].y) + (array[1].y) + (array[2].y)) / 3.0f;
+	middle.r = ((array[0].r) + (array[1].r) + (array[2].r)) / 3.0f;
+	*top_left = middle;
+	*top_right = middle;
+	*bottom_left = middle;
+	*sync = middle;
+	*data = middle;
+
+	for (i = 0; i < 3; i++)
+	{
+		if (array[i].x <= top_left->x && array[i].y <= top_left->y) *top_left = array[i];
+		if (array[i].x >= top_right->x && array[i].y <= top_right->y) *top_right = array[i];
+		if (array[i].x <= bottom_left->x && array[i].y >= bottom_left->y) *bottom_left = array[i];
+	}
+
+	sync->x = top_right->x;
+	sync->y = bottom_left->y;
+	
+	data->x = (top_right->x + bottom_left->x) / 2;
+	data->y = (top_right->y + bottom_left->y) / 2;
+}
+
+/* returns 1 if bit represented by circle is set to 1 and 0 otherwise */
+
+int bitSet(IplImage* image, Circle_t* circle, float treshold)
+{
+	Pixel_t px;
+	px = getPixel(image, circle->x, circle->y);
+	if ((px.r + px.g + px.b) / 3.0f >= treshold) return 1;
+	return 0;
 }

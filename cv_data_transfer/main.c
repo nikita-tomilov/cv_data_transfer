@@ -55,8 +55,16 @@ int main(int argc, char* argv[])
 	cvCreateTrackbar("Radius G", "settings", g_tracking_values + 4, 255, NULL);
 	cvCreateTrackbar("Radius B", "settings", g_tracking_values + 5, 255, NULL);
 
-	cvInitFont(&main_font, CV_FONT_HERSHEY_COMPLEX, 1.0f, 1.0f, 0, 1, CV_AA);
+	cvInitFont(&main_font, CV_FONT_HERSHEY_COMPLEX_SMALL, 1.0f, 1.0f, 0, 1, CV_AA);
 
+	Circle_t old_circles[3];
+	int found_data_frame = 0;
+	Circle_t top_left;
+	Circle_t top_right;
+	Circle_t bottom_left;
+	Circle_t sync, data;
+	
+	Circle_t* cir, cur;
 
 	while (1)
 	{
@@ -72,29 +80,14 @@ int main(int argc, char* argv[])
 		applyFuncOnImage(frame, dst, 4, g_tracking_values, calculateTresholdByRGBValue);
 
 
-		/*cvAddWeighted(frame, 1.5, dst, -0.5, 0, dst);
-
-
-		cvCvtColor(frame, hls, CV_BGR2HLS);
-
-		applyFuncOnImage(hls, hls, 1, &sat, calculateSaturationPixel);
-
-
-		cvCvtColor(hls, dst, CV_HLS2BGR);
-
-		applyFuncOnImage(dst, filtered, 2, b_treshold, calculateBTresholdPixel);
-		applyFuncOnImage(dst, filtered, 1, &bin_border, calculateBrightnessTresholdPixel);
-		*/
 		cvCvtColor(dst, bw, CV_BGR2GRAY);
 		cvSmooth(bw, bw, CV_GAUSSIAN, 15, 0, 3, 3);
-		/*cvThreshold(bw, bw, bin_border, 255, CV_THRESH_BINARY);
-
-		cvEqualizeHist(frame, dst);*/
-
+		cvDilate(bw, bw, cvCreateStructuringElementEx(3, 3, 1, 1, CV_SHAPE_ELLIPSE, NULL), 2);
+		
 		/* drawing all uniq circles */
 		int n = 0;
 		int n1 = 0;
-		Circle_t* cir, cur;
+		
 		cir = getAllCirlces(bw, &n1);
 		cir = getUniqCircles(cir, n1, 15, &n);
 
@@ -102,30 +95,64 @@ int main(int argc, char* argv[])
 
 		if (n == 3)
 		{
-		
+			found_data_frame = 1;
+
 			CvPoint centers[3];
 			cvPutText(frame, "Data Frame recognized.", cvPoint(30, 30),
 				&main_font, cvScalar(0, 255, 0, 0));
 
+			calculateCircles(cir, &top_left, &top_right, &bottom_left, &sync, &data);
+
 			for (int i = 0; i < 3; i++)
 			{
 				cur = cir[i];
-				cvCircle(frame, cvPoint(cur.x, cur.y), cur.r, cvScalar(0, 0, 255, 0), 1, 8, 0);
 				centers[i].x = cur.x;
 				centers[i].y = cur.y;
+				old_circles[i] = cir[i];
 			}
 
-			cvLine(frame, centers[0], centers[1], cvScalar(0, 0, 255, 0), 1, CV_AA, 0);
+			/* drawing markers */
+			cvCircle(frame, cvPoint(top_left.x, top_left.y), top_left.r, cvScalar(0, 0, 255, 0), 1, 8, 0);
+			cvCircle(frame, cvPoint(top_right.x, top_right.y), top_right.r, cvScalar(0, 0, 255, 0), 1, 8, 0);
+			cvCircle(frame, cvPoint(bottom_left.x, bottom_left.y), bottom_left.r, cvScalar(0, 0, 255, 0), 1, 8, 0);
+			/* drawing sync and data */
+			cvCircle(frame, cvPoint(data.x, data.y), data.r, cvScalar(255, 255, 255, 0), 1, 8, 0);
+			cvCircle(frame, cvPoint(sync.x, sync.y), sync.r, cvScalar(255, 0, 0, 0), 1, 8, 0);
+			/*drawing beautiful lines */
+			/*cvLine(frame, centers[0], centers[1], cvScalar(0, 0, 255, 0), 1, CV_AA, 0);
 			cvLine(frame, centers[1], centers[2], cvScalar(0, 0, 255, 0), 1, CV_AA, 0);
-			cvLine(frame, centers[0], centers[2], cvScalar(0, 0, 255, 0), 1, CV_AA, 0);
+			cvLine(frame, centers[0], centers[2], cvScalar(0, 0, 255, 0), 1, CV_AA, 0);*/
 		}
 		else
 		{
 			cvPutText(frame, "No Data Frame recognized.", cvPoint(30, 30),
 				&main_font, cvScalar(0, 0,  255, 0));
+			if (found_data_frame)
+			{
+				/* drawing markers */
+				cvCircle(frame, cvPoint(top_left.x, top_left.y), top_left.r, cvScalar(0, 0, 128, 0), 1, 8, 0);
+				cvCircle(frame, cvPoint(top_right.x, top_right.y), top_right.r, cvScalar(0, 0, 128, 0), 1, 8, 0);
+				cvCircle(frame, cvPoint(bottom_left.x, bottom_left.y), bottom_left.r, cvScalar(0, 0, 128, 0), 1, 8, 0);
+				/* drawing sync and data */
+				cvCircle(frame, cvPoint(data.x, data.y), data.r, cvScalar(128, 128, 128, 0), 1, 8, 0);
+				cvCircle(frame, cvPoint(sync.x, sync.y), sync.r, cvScalar(128, 128, 128, 0), 1, 8, 0);
+			}
 		}
 
-		
+		if (found_data_frame)
+		{
+			
+			if (bitSet(frame, &sync, 180))
+			{
+				cvPutText(frame, "Sync bit is enabled.", cvPoint(30, 60),
+					&main_font, cvScalar(255, 0, 0, 0));
+				if (bitSet(frame, &data, 200))
+				{
+					cvPutText(frame, "Data bit is enabled.", cvPoint(30, 90),
+						&main_font, cvScalar(255, 255, 255, 0));
+				}
+			}
+		}
 
 		/* showing image */
 		cvShowImage("capture", frame);
