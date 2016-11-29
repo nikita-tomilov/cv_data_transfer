@@ -37,16 +37,58 @@ MCUFRIEND_kbv tft;
 
 /* From this point, you could do anything you want */
 
+#define DELAY 300
+
 int has_sync = 0;
 int has_data = 0;
 
 extern const uint8_t hanzi[];
 
+
+/* draws sync circle (bottom left one) or clears it according to value */
+void setSyncSignal(int value)
+{
+  if (value) tft.fillCircle(200, 40, 40, RED);
+       else tft.fillCircle(200, 40, 40, BLACK);
+}
+/* draws data circle (center one) or clears it according to value */
+void setDataSignal(int data)
+{
+  if (data) tft.fillCircle(120, 160, 40, RED);
+       else tft.fillCircle(120, 160, 40, BLACK);
+}
+
+/* sends one bit */
+void sendData(byte data)
+{
+  byte bits[8];
+  Serial.print(data);
+  Serial.print(" : ");
+  for (int i = 7; i >= 0; i--)
+  {
+    bits[i] = data % 2;
+    data = data / 2;
+    //Serial.print(bits[i]);
+  }
+  Serial.print("0xb");
+  for (int i = 0; i < 8; i++)
+  {
+     Serial.print(bits[i]);
+     setSyncSignal(1);
+     setDataSignal(bits[i]);
+     delay(DELAY);
+     setSyncSignal(0);
+     setDataSignal(0);
+     delay(DELAY);
+  }
+  Serial.println();
+}
+
 void setup(void) {
     Serial.begin(9600);
    
     tft.begin(0x1520);     //change this if display is not working correctly
-    tft.fillScreen(BLACK);
+    tft.fillScreen(BLACK); //init screen
     has_sync = 0;
     has_data = 0;
 }
@@ -57,33 +99,19 @@ void loop(void) {
     tft.fillCircle(40,40,40, BLUE);
     tft.fillCircle(40,280,40, BLUE);
     tft.fillCircle(200,280,40, BLUE);
-    if (has_sync) 
+    /*if (has_sync) 
     {
        tft.fillCircle(200,40,40, RED);
     }
      if (has_data) 
     {
        tft.fillCircle(120,160,40, RED);
-    }
+    }*/
     if (Serial.available() > 0)
     {
       byte input;
       input = Serial.read();
-      if (input == '0')
-      {
-        has_sync = 0;
-        has_data = 0;
-      }
-      if (input == '1')
-      {
-        has_sync = 1;
-        has_data = 0;
-      }
-      if (input == '2')
-      {
-        has_sync = 1;
-        has_data = 1;
-      }
+      sendData(input);
       tft.fillScreen(BLACK);
     }
     

@@ -13,6 +13,13 @@ int g_tracking_values[] = { 0, 0, 0, 10, 10, 10 };
 
 IplImage* frame;
 
+int bits_recieved[8];
+int bits_count = 0;
+int byte_recieved = 0;
+int previous_byte_recieved = 0;
+int sync_counted = 0;
+
+
 void mouseCallback(int mevent, int x, int y, int flags, void* userdata)
 {
 	if (mevent == CV_EVENT_LBUTTONUP)
@@ -23,6 +30,14 @@ void mouseCallback(int mevent, int x, int y, int flags, void* userdata)
 		g_tracking_values[1] = px.g;
 		g_tracking_values[2] = px.b;
 		/* printf("lmouse %d %d\n", x, y); */
+	}
+	if (mevent == CV_EVENT_RBUTTONUP)
+	{
+		printf("reset.\n");
+		bits_count = 0;
+		byte_recieved = 0;
+		previous_byte_recieved = 0;
+		sync_counted = 0;
 	}
 }
 
@@ -65,6 +80,7 @@ int main(int argc, char* argv[])
 	Circle_t sync, data;
 	
 	Circle_t* cir, cur;
+
 
 	while (1)
 	{
@@ -142,15 +158,59 @@ int main(int argc, char* argv[])
 		if (found_data_frame)
 		{
 			
-			if (bitSet(frame, &sync, 180))
+			if (bitSet(frame, &sync, 230))
 			{
 				cvPutText(frame, "Sync bit is enabled.", cvPoint(30, 60),
 					&main_font, cvScalar(255, 0, 0, 0));
-				if (bitSet(frame, &data, 200))
+				sync_counted++;
+				
+				if (sync_counted > 0)
 				{
-					cvPutText(frame, "Data bit is enabled.", cvPoint(30, 90),
-						&main_font, cvScalar(255, 255, 255, 0));
+					printf("Sync found.\n");
+					sync_counted == 0;
+					if (bitSet(frame, &data, 230))
+					{
+						cvPutText(frame, "Data bit is enabled.", cvPoint(30, 90),
+							&main_font, cvScalar(255, 255, 255, 0));
+						bits_recieved[bits_count] = 1;
+						printf(">Recieved 1.\n");
+					}
+					else
+					{
+						bits_recieved[bits_count] = 0;
+						printf(">Recieved 0.\n");
+					}
+					//printf(">>%d\n", bits_recieved[bits_count]);
+					bits_count++;
+					if (bits_count = 8)
+					{
+						printf(">Recieved 8 bits.\n");
+						bits_count = 0;
+						byte_recieved = 0;
+						for (int i = 0; i < 8; i++)
+						{
+							byte_recieved *= 2;
+							byte_recieved += bits_recieved[i];
+						}
+						printf(">Recieved %d\n", byte_recieved);
+					}
 				}
+				
+			}
+			else
+			{
+				if (sync_counted == 0)
+				{
+					sync_counted = 1;
+					printf("Sync lost.\n");
+				}
+			}
+			if (byte_recieved != 0 && byte_recieved != previous_byte_recieved)
+			{
+				printf("%d\n", byte_recieved);
+				previous_byte_recieved = byte_recieved;
+				/*cvPutText(frame, _itoa(byte_recieved, NULL, 10) , cvPoint(30, 120),
+					&main_font, cvScalar(255, 255, 255, 0));*/
 			}
 		}
 
