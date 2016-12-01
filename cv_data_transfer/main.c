@@ -243,9 +243,9 @@ int main(int argc, char* argv[])
 			return;
 			
 		}
-
-		cvFree_(frame);
-		cvFree_(bw);
+		
+		
 	}
+	cvReleaseCapture(capture);
 }
 

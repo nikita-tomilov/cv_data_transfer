@@ -58,17 +58,35 @@ void setDataSignal(int data)
 /* sends one bit */
 void sendData(byte data)
 {
-  byte bits[8];
+  byte bits[9];
+  bits[8] = 0; /* parity bit */
   Serial.print(data);
   Serial.print(" : ");
   for (int i = 7; i >= 0; i--)
   {
     bits[i] = data % 2;
     data = data / 2;
+    bits[8] += bits[i]; 
     //Serial.print(bits[i]);
   }
   Serial.print("0xb");
-  for (int i = 0; i < 8; i++)
+
+  bits[8] = (bits[8] % 2 == 0 ? 0 : 1);
+
+  /* start bits */
+  setSyncSignal(1);
+  setDataSignal(0);
+  delay(DELAY);
+  setSyncSignal(0);
+  delay(DELAY);
+  setSyncSignal(0);
+  setDataSignal(1);
+  delay(DELAY);
+  setDataSignal(0);
+  delay(DELAY);
+  
+  /* data sending */
+  for (int i = 0; i < 9; i++)
   {
      Serial.print(bits[i]);
      setSyncSignal(1);
