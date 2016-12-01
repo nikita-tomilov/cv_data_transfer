@@ -13,11 +13,11 @@ int g_tracking_values[] = { 0, 0, 0, 10, 10, 10 };
 
 IplImage* frame;
 
-int bits_recieved[8];
+/*int bits_recieved[8];
 int bits_count = 0;
 int byte_recieved = 0;
 int previous_byte_recieved = 0;
-int sync_counted = 0;
+int sync_counted = 0;*/
 
 
 void mouseCallback(int mevent, int x, int y, int flags, void* userdata)
@@ -31,20 +31,20 @@ void mouseCallback(int mevent, int x, int y, int flags, void* userdata)
 		g_tracking_values[2] = px.b;
 		/* printf("lmouse %d %d\n", x, y); */
 	}
-	if (mevent == CV_EVENT_RBUTTONUP)
+	/*if (mevent == CV_EVENT_RBUTTONUP)
 	{
 		printf("reset.\n");
 		bits_count = 0;
 		byte_recieved = 0;
 		previous_byte_recieved = 0;
 		sync_counted = 0;
-	}
+	}*/
 }
 
 int main(int argc, char* argv[])
 {
 	/* initialising camera */
-	CvCapture* capture = cvCreateCameraCapture(CV_CAP_ANY); 
+	CvCapture* capture = cvCreateCameraCapture(CV_CAP_ANY);
 	assert(capture);
 
 	/* initialising window */
@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
 	IplImage* bw = cvCreateImage(cvSize(frame->width, frame->height), IPL_DEPTH_8U, 1); /* bw image used for finding circles */
 	IplImage* hls = cvCreateImage(cvSize(frame->width, frame->height), frame->depth, frame->nChannels); /* image in hls for changing saturation */
 	IplImage* filtered = cvCreateImage(cvSize(frame->width, frame->height), frame->depth, frame->nChannels); /* image after filtering */
-	
+
 	CvFont main_font;
 
 	/* adjusting trackbars */
@@ -78,9 +78,13 @@ int main(int argc, char* argv[])
 	Circle_t top_right;
 	Circle_t bottom_left;
 	Circle_t sync, data;
-	
+
 	Circle_t* cir, cur;
 
+	//int sync_buf[256];
+	//int data_buf[256];
+	int* sync_buf = (int*)calloc(256, sizeof(int));
+	int* data_buf = (int*)calloc(256, sizeof(int));
 
 	while (1)
 	{
@@ -155,33 +159,41 @@ int main(int argc, char* argv[])
 			}
 		}
 
+		/* getting ready to draw fancy graph */
+		for (int i = 0; i < 255; i++)
+		{
+			sync_buf[i] = sync_buf[i + 1];
+			data_buf[i] = data_buf[i + 1];
+		}
+
 		if (found_data_frame)
 		{
-			
+			sync_buf[255] = bitSet(frame, &sync, 230);
+			data_buf[255] = bitSet(frame, &data, 230);
 			if (bitSet(frame, &sync, 230))
 			{
 				cvPutText(frame, "Sync bit is enabled.", cvPoint(30, 60),
 					&main_font, cvScalar(255, 0, 0, 0));
-				sync_counted++;
-				
-				if (sync_counted > 0)
+				//sync_counted++;
+				if (bitSet(frame, &data, 230))
+				{
+					cvPutText(frame, "Data bit is enabled.", cvPoint(30, 90),
+						&main_font, cvScalar(255, 255, 255, 0));
+					//bits_recieved[bits_count] = 1;
+					//printf(">Recieved 1.\n");
+				}
+				/*if (sync_counted > 0)
 				{
 					printf("Sync found.\n");
-					sync_counted == 0;
-					if (bitSet(frame, &data, 230))
-					{
-						cvPutText(frame, "Data bit is enabled.", cvPoint(30, 90),
-							&main_font, cvScalar(255, 255, 255, 0));
-						bits_recieved[bits_count] = 1;
-						printf(">Recieved 1.\n");
-					}
+					//sync_counted == 0;
+					
 					else
 					{
-						bits_recieved[bits_count] = 0;
-						printf(">Recieved 0.\n");
+						//bits_recieved[bits_count] = 0;
+						//printf(">Recieved 0.\n");
 					}
 					//printf(">>%d\n", bits_recieved[bits_count]);
-					bits_count++;
+					/*bits_count++;
 					if (bits_count = 8)
 					{
 						printf(">Recieved 8 bits.\n");
@@ -194,24 +206,32 @@ int main(int argc, char* argv[])
 						}
 						printf(">Recieved %d\n", byte_recieved);
 					}
-				}
+				}*/
 				
 			}
 			else
 			{
-				if (sync_counted == 0)
+				/*if (sync_counted == 0)
 				{
 					sync_counted = 1;
 					printf("Sync lost.\n");
-				}
+				}*/
 			}
-			if (byte_recieved != 0 && byte_recieved != previous_byte_recieved)
+			/*if (byte_recieved != 0 && byte_recieved != previous_byte_recieved)
 			{
 				printf("%d\n", byte_recieved);
 				previous_byte_recieved = byte_recieved;
-				/*cvPutText(frame, _itoa(byte_recieved, NULL, 10) , cvPoint(30, 120),
-					&main_font, cvScalar(255, 255, 255, 0));*/
-			}
+				cvPutText(frame, _itoa(byte_recieved, NULL, 10) , cvPoint(30, 120),
+					&main_font, cvScalar(255, 255, 255, 0));
+			}*/
+		}
+
+		/* drawing fancy graph */
+		for (int i = 1; i < 256; i++)
+		{
+			cvDrawLine(frame, cvPoint(i * 2, 350 - sync_buf[i-1] / 4), cvPoint(i * 2 + 1, 350 - sync_buf[i] / 4), cvScalar(0, 0, 255, 0), 1, 1, 0);
+			cvDrawLine(frame, cvPoint(i * 2, 450 - data_buf[i - 1] / 4), cvPoint(i * 2 + 1, 450 - data_buf[i] / 4), cvScalar(255, 0, 0, 0), 1, 1, 0);
+
 		}
 
 		/* showing image */
@@ -224,6 +244,8 @@ int main(int argc, char* argv[])
 			
 		}
 
+		cvFree_(frame);
+		cvFree_(bw);
 	}
 }
 

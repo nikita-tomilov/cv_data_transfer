@@ -42,9 +42,6 @@ MCUFRIEND_kbv tft;
 int has_sync = 0;
 int has_data = 0;
 
-extern const uint8_t hanzi[];
-
-
 /* draws sync circle (bottom left one) or clears it according to value */
 void setSyncSignal(int value)
 {

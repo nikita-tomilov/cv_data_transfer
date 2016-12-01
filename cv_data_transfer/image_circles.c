@@ -113,7 +113,9 @@ void calculateCircles(Circle_t* array, Circle_t* top_left, Circle_t* top_right, 
 int bitSet(IplImage* image, Circle_t* circle, float treshold)
 {
 	Pixel_t px;
+	float curval;
 	px = getPixel(image, circle->x, circle->y);
-	if ((px.r + px.g + px.b) / 3.0f >= treshold) return 1;
+	curval = (px.r + px.g + px.b) / 3.0f;
+	if (curval >= treshold) return (int)curval;
 	return 0;
 }
