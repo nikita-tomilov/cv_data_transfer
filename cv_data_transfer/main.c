@@ -19,6 +19,19 @@ int byte_recieved = 0;
 int previous_byte_recieved = 0;
 int sync_counted = 0;*/
 
+int getBitState(int* array, int delta)
+{
+	int i;
+	for (i = 0; i < delta; i++)
+	{
+		if (array[255 - i] <= 10) return 0; //hole => bit not set now
+	}
+	for (i = 0; i < delta; i++)
+	{
+		array[255 - i] = 0;
+	}
+	return 1;
+}
 
 void mouseCallback(int mevent, int x, int y, int flags, void* userdata)
 {
@@ -74,10 +87,10 @@ int main(int argc, char* argv[])
 
 	Circle_t* cir, cur;
 
-	//int sync_buf[256];
-	//int data_buf[256];
 	int* sync_buf = (int*)calloc(256, sizeof(int));
 	int* data_buf = (int*)calloc(256, sizeof(int));
+	int sync_state = 0;
+	int data_state = 0;
 
 	while (1)
 	{
@@ -187,8 +200,16 @@ int main(int argc, char* argv[])
 		{
 			cvDrawLine(frame, cvPoint(i * 2, 350 - sync_buf[i-1] / 4), cvPoint(i * 2 + 1, 350 - sync_buf[i] / 4), cvScalar(0, 0, 255, 0), 1, 1, 0);
 			cvDrawLine(frame, cvPoint(i * 2, 450 - data_buf[i - 1] / 4), cvPoint(i * 2 + 1, 450 - data_buf[i] / 4), cvScalar(255, 0, 0, 0), 1, 1, 0);
-
+			if (i % 2 == 0) cvDrawLine(frame, cvPoint(i * 2, 400), cvPoint(i * 2 + 1, 400), cvScalar(255, 255, 255, 0), 1, 1, 0);
 		}
+
+		/* now that we have drawn graph we are free to analyze its results */
+		sync_state = getBitState(sync_buf, 2);
+		data_state = getBitState(data_buf, 2);
+
+		if (sync_state && !data_state) printf("Only sync.\n");
+		if (!sync_state && data_state) printf("Only data.\n");
+		if (sync_state && data_state) printf("Both.\n");
 
 		/* showing image */
 		cvShowImage("capture", frame);

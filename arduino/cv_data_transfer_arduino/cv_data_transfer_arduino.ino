@@ -60,6 +60,9 @@ void sendData(byte data)
 {
   byte bits[9];
   bits[8] = 0; /* parity bit */
+  Serial.print("'");
+  Serial.write(data);
+  Serial.print("' : ");
   Serial.print(data);
   Serial.print(" : ");
   for (int i = 7; i >= 0; i--)
@@ -69,7 +72,7 @@ void sendData(byte data)
     bits[8] += bits[i]; 
     //Serial.print(bits[i]);
   }
-  Serial.print("0xb");
+  Serial.print("0b");
 
   bits[8] = (bits[8] % 2 == 0 ? 0 : 1);
 
@@ -127,7 +130,9 @@ void loop(void) {
       byte input;
       input = Serial.read();
       sendData(input);
-      tft.fillScreen(BLACK);
+      setSyncSignal(0);
+      setDataSignal(0);
+      /* tft.fillScreen(BLACK); */
     }
     
     delay(100);
