@@ -31,14 +31,6 @@ void mouseCallback(int mevent, int x, int y, int flags, void* userdata)
 		g_tracking_values[2] = px.b;
 		/* printf("lmouse %d %d\n", x, y); */
 	}
-	/*if (mevent == CV_EVENT_RBUTTONUP)
-	{
-		printf("reset.\n");
-		bits_count = 0;
-		byte_recieved = 0;
-		previous_byte_recieved = 0;
-		sync_counted = 0;
-	}*/
 }
 
 int main(int argc, char* argv[])
@@ -57,10 +49,12 @@ int main(int argc, char* argv[])
 	frame = cvQueryFrame(capture); /* webcam image */
 	IplImage* dst = cvCreateImage(cvSize(frame->width, frame->height), frame->depth, frame->nChannels);  /*destination for all magic */
 	IplImage* bw = cvCreateImage(cvSize(frame->width, frame->height), IPL_DEPTH_8U, 1); /* bw image used for finding circles */
-	IplImage* hls = cvCreateImage(cvSize(frame->width, frame->height), frame->depth, frame->nChannels); /* image in hls for changing saturation */
-	IplImage* filtered = cvCreateImage(cvSize(frame->width, frame->height), frame->depth, frame->nChannels); /* image after filtering */
+	//IplImage* hls = cvCreateImage(cvSize(frame->width, frame->height), frame->depth, frame->nChannels); /* image in hls for changing saturation */
+	//IplImage* filtered = cvCreateImage(cvSize(frame->width, frame->height), frame->depth, frame->nChannels); /* image after filtering */
 
+	/* initialising font for printing text */
 	CvFont main_font;
+	cvInitFont(&main_font, CV_FONT_HERSHEY_COMPLEX_SMALL, 1.0f, 1.0f, 0, 1, CV_AA);
 
 	/* adjusting trackbars */
 	cvCreateTrackbar("R", "settings", g_tracking_values, 255, NULL);
@@ -70,8 +64,7 @@ int main(int argc, char* argv[])
 	cvCreateTrackbar("Radius G", "settings", g_tracking_values + 4, 255, NULL);
 	cvCreateTrackbar("Radius B", "settings", g_tracking_values + 5, 255, NULL);
 
-	cvInitFont(&main_font, CV_FONT_HERSHEY_COMPLEX_SMALL, 1.0f, 1.0f, 0, 1, CV_AA);
-
+	/* initialising markers, sync and data circles */
 	Circle_t old_circles[3];
 	int found_data_frame = 0;
 	Circle_t top_left;
@@ -96,6 +89,7 @@ int main(int argc, char* argv[])
 		/* retrieving image */
 		frame = cvQueryFrame(capture);
 		dst = cvClone(frame);
+		//cvCopy(frame, dst, NULL);
 
 		applyFuncOnImage(frame, dst, 4, g_tracking_values, calculateTresholdByRGBValue);
 
@@ -174,56 +168,18 @@ int main(int argc, char* argv[])
 			{
 				cvPutText(frame, "Sync bit is enabled.", cvPoint(30, 60),
 					&main_font, cvScalar(255, 0, 0, 0));
-				//sync_counted++;
+				
 				if (bitSet(frame, &data, 230))
 				{
 					cvPutText(frame, "Data bit is enabled.", cvPoint(30, 90),
 						&main_font, cvScalar(255, 255, 255, 0));
-					//bits_recieved[bits_count] = 1;
-					//printf(">Recieved 1.\n");
 				}
-				/*if (sync_counted > 0)
-				{
-					printf("Sync found.\n");
-					//sync_counted == 0;
-					
-					else
-					{
-						//bits_recieved[bits_count] = 0;
-						//printf(">Recieved 0.\n");
-					}
-					//printf(">>%d\n", bits_recieved[bits_count]);
-					/*bits_count++;
-					if (bits_count = 8)
-					{
-						printf(">Recieved 8 bits.\n");
-						bits_count = 0;
-						byte_recieved = 0;
-						for (int i = 0; i < 8; i++)
-						{
-							byte_recieved *= 2;
-							byte_recieved += bits_recieved[i];
-						}
-						printf(">Recieved %d\n", byte_recieved);
-					}
-				}*/
-				
 			}
 			else
 			{
-				/*if (sync_counted == 0)
-				{
-					sync_counted = 1;
-					printf("Sync lost.\n");
-				}*/
+				
 			}
-			/*if (byte_recieved != 0 && byte_recieved != previous_byte_recieved)
-			{
-				printf("%d\n", byte_recieved);
-				previous_byte_recieved = byte_recieved;
-				cvPutText(frame, _itoa(byte_recieved, NULL, 10) , cvPoint(30, 120),
-					&main_font, cvScalar(255, 255, 255, 0));
-			}*/
+		
 		}
 
 		/* drawing fancy graph */
@@ -244,6 +200,9 @@ int main(int argc, char* argv[])
 			
 		}
 		
+		/* freeing up */
+		cvReleaseImage(&dst);
+		/* should NOT release bw and frame */
 		
 	}
 	cvReleaseCapture(capture);
