@@ -91,6 +91,8 @@ int main(int argc, char* argv[])
 	int* data_buf = (int*)calloc(256, sizeof(int));
 	int sync_state = 0;
 	int data_state = 0;
+	int sync_timeout = 0;
+	int data_timeout = 0;
 
 	while (1)
 	{
@@ -207,8 +209,24 @@ int main(int argc, char* argv[])
 		sync_state = getBitState(sync_buf, 2);
 		data_state = getBitState(data_buf, 2);
 
-		if (sync_state && !data_state) printf("Only sync.\n");
-		if (!sync_state && data_state) printf("Only data.\n");
+		/* analysing image begins */
+		if (sync_timeout > 0) sync_timeout--;
+		if (data_timeout > 0) data_timeout--;
+
+		if (sync_state && !data_state)
+		{
+			printf("Only sync.\n");
+			sync_timeout = 10;
+		}
+		if (!sync_state && data_state)
+		{
+			printf("Only data.\n");
+			data_timeout = 10;
+			if (sync_timeout > 0)
+			{
+				printf("Got starting marker; transferring began\n");
+			}
+		}
 		if (sync_state && data_state) printf("Both.\n");
 
 		/* showing image */
