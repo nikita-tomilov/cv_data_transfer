@@ -91,6 +91,7 @@ void sendData(byte data)
   /* data sending */
   for (int i = 0; i < 9; i++)
   {
+     if (i == 8) Serial.print(" ");
      Serial.print(bits[i]);
      setSyncSignal(1);
      setDataSignal(bits[i]);

@@ -94,6 +94,10 @@ int main(int argc, char* argv[])
 	int sync_timeout = 0;
 	int data_timeout = 0;
 
+	int* recieved_bits = (int*)calloc(8, sizeof(int));
+	int recieved_bits_count = 0;
+	int is_data_transferring = 0;
+
 	while (1)
 	{
 		cvSetTrackbarPos("R", "settings", g_tracking_values[0]);
@@ -217,6 +221,11 @@ int main(int argc, char* argv[])
 		{
 			printf("Only sync.\n");
 			sync_timeout = 10;
+			if (is_data_transferring)
+			{
+				recieved_bits[recieved_bits_count] = 0;
+				recieved_bits_count++;
+			}
 		}
 		if (!sync_state && data_state)
 		{
@@ -225,9 +234,27 @@ int main(int argc, char* argv[])
 			if (sync_timeout > 0)
 			{
 				printf("Got starting marker; transferring began\n");
+				is_data_transferring = 1;
 			}
 		}
-		if (sync_state && data_state) printf("Both.\n");
+		if (sync_state && data_state)
+		{
+			printf("Both.\n");
+			if (is_data_transferring)
+			{
+				recieved_bits[recieved_bits_count] = 1;
+				recieved_bits_count++;
+			}
+		}
+
+		/* byte recieved */
+		if (recieved_bits_count == 8)
+		{
+			printf("Got byte 0b");
+			for (int i = 0; i < 8; i++) printf("%d", recieved_bits[i]);
+			recieved_bits_count = 0;
+			printf("\n");
+		}
 
 		/* showing image */
 		cvShowImage("capture", frame);
