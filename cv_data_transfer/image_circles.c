@@ -101,11 +101,13 @@ void calculateCircles(Circle_t* array, Circle_t* top_left, Circle_t* top_right, 
 		if (array[i].x <= bottom_left->x && array[i].y >= bottom_left->y) *bottom_left = array[i];
 	}
 
-	sync->x = top_right->x;
-	sync->y = bottom_left->y;
-	
+
 	data->x = (top_right->x + bottom_left->x) / 2;
 	data->y = (top_right->y + bottom_left->y) / 2;
+
+	sync->x = (2 * data->x - top_left->x);
+	sync->y = (2 * data->y - top_left->y);
+	
 }
 
 /* returns 1 if bit represented by circle is set to 1 and 0 otherwise */
