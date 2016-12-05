@@ -7,9 +7,14 @@
 #include "image_circles.h"
 #include "image_filters.h"
 
+/* time to track circles in "ticks" 
+   one tick = one frame being captured */
+
+#define CIRCLE_TIME 3
+
 /* used to treshold on blue tracking points */
 /* b, g, r, radius */
-int g_tracking_values[] = { 0, 0, 0, 10, 10, 10 };
+int g_tracking_values[] = { 0, 0, 0, 5, 5, 5 };
 
 IplImage* frame;
 
@@ -87,16 +92,25 @@ int main(int argc, char* argv[])
 
 	Circle_t* cir, cur;
 
+	/* buffers for tracked values */
 	int* sync_buf = (int*)calloc(256, sizeof(int));
 	int* data_buf = (int*)calloc(256, sizeof(int));
+	/* and backups to draw graph */
+	int* sync_buf_bckp = (int*)calloc(256, sizeof(int));
+	int* data_buf_bckp = (int*)calloc(256, sizeof(int));
+	/* states */
 	int sync_state = 0;
 	int data_state = 0;
+	/* timeouts */
 	int sync_timeout = 0;
 	int data_timeout = 0;
 
-	int* recieved_bits = (int*)calloc(8, sizeof(int));
+	/* recieved data parsing */
+	int* recieved_bits = (int*)calloc(9, sizeof(int)); /* 8 + parity */
 	int recieved_bits_count = 0;
 	int is_data_transferring = 0;
+	int incoming_value = 0;
+	int current_parity = 0;
 
 	while (1)
 	{
@@ -177,12 +191,16 @@ int main(int argc, char* argv[])
 		{
 			sync_buf[i] = sync_buf[i + 1];
 			data_buf[i] = data_buf[i + 1];
+			sync_buf_bckp[i] = sync_buf_bckp[i + 1];
+			data_buf_bckp[i] = data_buf_bckp[i + 1];
 		}
 
 		if (found_data_frame)
 		{
 			sync_buf[255] = bitSet(frame, &sync, 230);
 			data_buf[255] = bitSet(frame, &data, 230);
+			sync_buf_bckp[255] = sync_buf[255];
+			data_buf_bckp[255] = data_buf[255];
 			if (bitSet(frame, &sync, 230))
 			{
 				cvPutText(frame, "Sync bit is enabled.", cvPoint(30, 60),
@@ -204,14 +222,14 @@ int main(int argc, char* argv[])
 		/* drawing fancy graph */
 		for (int i = 1; i < 256; i++)
 		{
-			cvDrawLine(frame, cvPoint(i * 2, 350 - sync_buf[i-1] / 4), cvPoint(i * 2 + 1, 350 - sync_buf[i] / 4), cvScalar(0, 0, 255, 0), 1, 1, 0);
-			cvDrawLine(frame, cvPoint(i * 2, 450 - data_buf[i - 1] / 4), cvPoint(i * 2 + 1, 450 - data_buf[i] / 4), cvScalar(255, 0, 0, 0), 1, 1, 0);
+			cvDrawLine(frame, cvPoint(i * 2, 350 - sync_buf_bckp[i - 1] / 4), cvPoint(i * 2 + 1, 350 - sync_buf_bckp[i] / 4), cvScalar(0, 0, 255, 0), 1, 1, 0);
+			cvDrawLine(frame, cvPoint(i * 2, 450 - data_buf_bckp[i - 1] / 4), cvPoint(i * 2 + 1, 450 - data_buf_bckp[i] / 4), cvScalar(255, 0, 0, 0), 1, 1, 0);
 			if (i % 2 == 0) cvDrawLine(frame, cvPoint(i * 2, 400), cvPoint(i * 2 + 1, 400), cvScalar(255, 255, 255, 0), 1, 1, 0);
 		}
 
 		/* now that we have drawn graph we are free to analyze its results */
-		sync_state = getBitState(sync_buf, 2);
-		data_state = getBitState(data_buf, 2);
+		sync_state = getBitState(sync_buf, CIRCLE_TIME);
+		data_state = getBitState(data_buf, CIRCLE_TIME);
 
 		/* analysing image begins */
 		if (sync_timeout > 0) sync_timeout--;
@@ -248,10 +266,29 @@ int main(int argc, char* argv[])
 		}
 
 		/* byte recieved */
-		if (recieved_bits_count == 8)
+		if (recieved_bits_count == 9)
 		{
 			printf("Got byte 0b");
-			for (int i = 0; i < 8; i++) printf("%d", recieved_bits[i]);
+			current_parity = 0;
+			incoming_value = 0;
+			is_data_transferring = 0;
+			for (int i = 0; i < 8; i++)
+			{
+				printf("%d", recieved_bits[i]);
+				incoming_value = incoming_value * 2 + recieved_bits[i];
+				current_parity += recieved_bits[i];
+			}
+			printf("\n> Parity recieved is %d.\n", recieved_bits[8]);
+			current_parity = (current_parity % 2 == 0 ? 0 : 1);
+			if (current_parity == recieved_bits[8])
+			{
+				printf("> Parity OK.\n");
+				printf("> Recieved byte %d == '%c'\n", incoming_value, (char)incoming_value);
+			}
+			else
+			{
+				printf("> Parity FAILED\n");
+			}
 			recieved_bits_count = 0;
 			printf("\n");
 		}
