@@ -237,7 +237,7 @@ int main(int argc, char* argv[])
 
 		if (sync_state && !data_state)
 		{
-			printf("Only sync.\n");
+			//printf("Only sync.\n");
 			sync_timeout = 10;
 			if (is_data_transferring)
 			{
@@ -247,7 +247,7 @@ int main(int argc, char* argv[])
 		}
 		if (!sync_state && data_state)
 		{
-			printf("Only data.\n");
+			//printf("Only data.\n");
 			data_timeout = 10;
 			if (sync_timeout > 0)
 			{
@@ -257,7 +257,7 @@ int main(int argc, char* argv[])
 		}
 		if (sync_state && data_state)
 		{
-			printf("Both.\n");
+			//printf("Both.\n");
 			if (is_data_transferring)
 			{
 				recieved_bits[recieved_bits_count] = 1;
