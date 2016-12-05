@@ -1,11 +1,10 @@
 # cv_data_transfer
-
-## Data transfer using Arduino and Webcam.
+Data transfer using Arduino and Webcam.
 ## Requirements:
 - Arduino Uno/Leonardo/whatsoever with coloured TFT screen
 - Web camera
 - 2 PCs/Laptops/whatsoever
-- OpenCV 2.4.13 on “reviever” PC
+- OpenCV 2.4.13 on “reciever” PC
 
 Other versions MAY WORK OR MAY NOT.
 
@@ -36,8 +35,8 @@ Windows without VS2013, Linux, MacOS, other Unix-based OS
 
 - Makefile coming soon
 - Or copy-paste sources and run under your IDE, compilers, etc.
-## Coming soon
 
+## Coming soon
 No idea what to add =(
 
 
