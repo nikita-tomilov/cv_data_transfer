@@ -36,6 +36,11 @@ Windows without VS2013, Linux, MacOS, other Unix-based OS
 - Makefile coming soon
 - Or copy-paste sources and run under your IDE, compilers, etc.
 
+## Command-line parameters
+- -h for help
+- -o <output> for writing recieved bytes to file
+- -v for full logs
+
 ## Coming soon
 No idea what to add =(
 

@@ -48,12 +48,22 @@ void mouseCallback(int mevent, int x, int y, int flags, void* userdata)
 int main(int argc, char* argv[])
 {
 	/* VARIABLES */
+
+	/* iterators */
+	size_t i;
+
+	/* program settings */
+	int show_all_debug = 0;
+	int write_to_file;
+
+	/* file IO */
+	FILE* output_file;
+	
+
 	/* time to track circles in "ticks"
 	one tick = one frame being captured */
 	int tracking_delay = 3;
 	
-	/* iterators */
-	size_t i, j;
 	
 	/* initialising markers, sync and data circles */
 	Circle_t old_circles[3];
@@ -87,9 +97,43 @@ int main(int argc, char* argv[])
 	int* recieved_bits = (int*)calloc(9, sizeof(int)); /* 8 + parity */
 	int recieved_bits_count = 0;
 	int is_data_transferring = 0;
-	int incoming_value = 0;
+	uint8_t incoming_value = 0;
 	int current_parity = 0;
 
+	/* WAIT! Let's check program launch params */
+	for (i = 0; i < argc; i++)
+	{
+		/* printf(">> %s\n", argv[i]); */
+		if (strcmp(argv[i], "-h") == 0)
+		{
+			printf("cv_data_transfer, PC side\n");
+			printf("https://github.com/Programmer74/cv_data_transfer \n");
+			printf("Additional parameters:\n");
+			printf(" -h Show this help\n");
+			printf(" -o <filename> - Write recieved bytes to file\n");
+			printf(" -v Show all logs\n");
+			return 0;
+		}
+		if (strcmp(argv[i], "-v") == 0) show_all_debug = 1;
+		if (strcmp(argv[i], "-o") == 0)
+		{
+			if (i + 1 == argv)
+			{
+				printf("No filename specified.\n");
+				return 0;
+			}
+			output_file = fopen(argv[i + 1], "wb");
+			if (output_file == NULL)
+			{
+				printf("Cannot open file %s\n.", argv[i + 1]);
+				return 0;
+			}
+			write_to_file = 1;
+			printf("Enabled data output to file %s.\n", argv[i + 1]);
+		}
+	}
+
+	printf("cv_data_transfer successfully launched.\n");
 
 	/* UI AND OPENCV */
 	/* initialising camera */
@@ -119,6 +163,8 @@ int main(int argc, char* argv[])
 	cvCreateTrackbar("Radius G", "settings", g_tracking_values + 4, 255, NULL);
 	cvCreateTrackbar("Radius B", "settings", g_tracking_values + 5, 255, NULL);
 	cvCreateTrackbar("Tracking delay", "settings", &tracking_delay, 10, NULL);
+
+	
 
 	/* MAIN LOOP GOES HERE */
 	while (1)
@@ -240,7 +286,7 @@ int main(int argc, char* argv[])
 
 		if (sync_state && !data_state)
 		{
-			/* printf("Only sync.\n"); */
+			if (show_all_debug) printf("Only sync enabled.\n"); 
 			sync_timeout = 10;
 			if (is_data_transferring)
 			{
@@ -250,7 +296,7 @@ int main(int argc, char* argv[])
 		}
 		if (!sync_state && data_state)
 		{
-			/* printf("Only data.\n"); */
+			if (show_all_debug) printf("Only data enabled.\n");
 			data_timeout = 10;
 			if (sync_timeout > 0)
 			{
@@ -260,7 +306,7 @@ int main(int argc, char* argv[])
 		}
 		if (sync_state && data_state)
 		{
-			//printf("Both.\n");
+			if (show_all_debug) printf("Both are enabled.\n");
 			if (is_data_transferring)
 			{
 				recieved_bits[recieved_bits_count] = 1;
@@ -285,8 +331,13 @@ int main(int argc, char* argv[])
 			current_parity = (current_parity % 2 == 0 ? 0 : 1);
 			if (current_parity == recieved_bits[8])
 			{
-				printf("> Parity OK.\n");
+				if (show_all_debug) printf("> Logged to file.\n");
 				printf("> Recieved byte %d == '%c'\n", incoming_value, (char)incoming_value);
+				if (write_to_file)
+				{
+					printf("> Parity OK.\n");
+					fwrite(&incoming_value, sizeof(uint8_t), 1, output_file);
+				}
 			}
 			else
 			{
@@ -302,7 +353,7 @@ int main(int argc, char* argv[])
 
 		char c = cvWaitKey(33);
 		if (c == 27) { /* esc key pressed */
-			return;
+			break;
 			
 		}
 		
@@ -313,6 +364,9 @@ int main(int argc, char* argv[])
 		/* should NOT release bw and frame */
 		
 	}
-	cvReleaseCapture(capture);
+	printf("Closed.\n");
+	//cvReleaseCapture(capture);
+	if (write_to_file) fclose(output_file);
+	printf("Bye.\n");
 }
 
