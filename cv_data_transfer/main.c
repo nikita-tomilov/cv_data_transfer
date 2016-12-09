@@ -7,23 +7,16 @@
 #include "image_circles.h"
 #include "image_filters.h"
 
-/* time to track circles in "ticks" 
-   one tick = one frame being captured */
-
-#define CIRCLE_TIME 3
+#define MIN_CIRCLE_RADIUS 15
 
 /* used to treshold on blue tracking points */
 /* b, g, r, radius */
 int g_tracking_values[] = { 0, 0, 0, 5, 5, 5 };
 
+/* main frame for captured image */
 IplImage* frame;
 
-/*int bits_recieved[8];
-int bits_count = 0;
-int byte_recieved = 0;
-int previous_byte_recieved = 0;
-int sync_counted = 0;*/
-
+/* used to get bit state in a graph */
 int getBitState(int* array, int delta)
 {
 	int i;
@@ -38,6 +31,7 @@ int getBitState(int* array, int delta)
 	return 1;
 }
 
+/* used to track mouse clicks and adjust color sliders */
 void mouseCallback(int mevent, int x, int y, int flags, void* userdata)
 {
 	if (mevent == CV_EVENT_LBUTTONUP)
@@ -53,35 +47,14 @@ void mouseCallback(int mevent, int x, int y, int flags, void* userdata)
 
 int main(int argc, char* argv[])
 {
-	/* initialising camera */
-	CvCapture* capture = cvCreateCameraCapture(CV_CAP_ANY);
-	assert(capture);
-
-	/* initialising window */
-	cvNamedWindow("capture", CV_WINDOW_AUTOSIZE);
-	cvNamedWindow("settings", CV_WINDOW_AUTOSIZE);
-	cvNamedWindow("filtered", CV_WINDOW_AUTOSIZE);
-	cvSetMouseCallback("capture", mouseCallback, NULL);
-
-	/* initialising images */
-	frame = cvQueryFrame(capture); /* webcam image */
-	IplImage* dst = cvCreateImage(cvSize(frame->width, frame->height), frame->depth, frame->nChannels);  /*destination for all magic */
-	IplImage* bw = cvCreateImage(cvSize(frame->width, frame->height), IPL_DEPTH_8U, 1); /* bw image used for finding circles */
-	//IplImage* hls = cvCreateImage(cvSize(frame->width, frame->height), frame->depth, frame->nChannels); /* image in hls for changing saturation */
-	//IplImage* filtered = cvCreateImage(cvSize(frame->width, frame->height), frame->depth, frame->nChannels); /* image after filtering */
-
-	/* initialising font for printing text */
-	CvFont main_font;
-	cvInitFont(&main_font, CV_FONT_HERSHEY_COMPLEX_SMALL, 1.0f, 1.0f, 0, 1, CV_AA);
-
-	/* adjusting trackbars */
-	cvCreateTrackbar("R", "settings", g_tracking_values, 255, NULL);
-	cvCreateTrackbar("G", "settings", g_tracking_values + 1, 255, NULL);
-	cvCreateTrackbar("B", "settings", g_tracking_values + 2, 255, NULL);
-	cvCreateTrackbar("Radius R", "settings", g_tracking_values + 3, 255, NULL);
-	cvCreateTrackbar("Radius G", "settings", g_tracking_values + 4, 255, NULL);
-	cvCreateTrackbar("Radius B", "settings", g_tracking_values + 5, 255, NULL);
-
+	/* VARIABLES */
+	/* time to track circles in "ticks"
+	one tick = one frame being captured */
+	int tracking_delay = 3;
+	
+	/* iterators */
+	size_t i, j;
+	
 	/* initialising markers, sync and data circles */
 	Circle_t old_circles[3];
 	int found_data_frame = 0;
@@ -90,7 +63,12 @@ int main(int argc, char* argv[])
 	Circle_t bottom_left;
 	Circle_t sync, data;
 
-	Circle_t* cir, cur;
+	/* all and uniq circles in locating data frame */
+	size_t all_circles_count, uniq_circles_count;
+	Circle_t* all_circles;
+	Circle_t* uniq_circles;
+	Circle_t current_circle;
+	CvPoint centers[3];
 
 	/* buffers for tracked values */
 	int* sync_buf = (int*)calloc(256, sizeof(int));
@@ -112,50 +90,79 @@ int main(int argc, char* argv[])
 	int incoming_value = 0;
 	int current_parity = 0;
 
+
+	/* UI AND OPENCV */
+	/* initialising camera */
+	CvCapture* capture = cvCreateCameraCapture(CV_CAP_ANY);
+	assert(capture);
+
+	/* initialising window */
+	cvNamedWindow("settings", CV_WINDOW_AUTOSIZE);
+	cvNamedWindow("filtered", CV_WINDOW_AUTOSIZE);
+	cvNamedWindow("capture", CV_WINDOW_AUTOSIZE);
+	cvSetMouseCallback("capture", mouseCallback, NULL);
+
+	/* initialising images */
+	frame = cvQueryFrame(capture); /* webcam image */
+	IplImage* dst = cvCreateImage(cvSize(frame->width, frame->height), frame->depth, frame->nChannels);  /*destination for all magic */
+	IplImage* bw = cvCreateImage(cvSize(frame->width, frame->height), IPL_DEPTH_8U, 1); /* bw image used for finding circles */
+
+	/* initialising font for printing text */
+	CvFont main_font;
+	cvInitFont(&main_font, CV_FONT_HERSHEY_COMPLEX_SMALL, 1.0f, 1.0f, 0, 1, CV_AA);
+
+	/* adjusting trackbars */
+	cvCreateTrackbar("R", "settings", g_tracking_values, 255, NULL);
+	cvCreateTrackbar("G", "settings", g_tracking_values + 1, 255, NULL);
+	cvCreateTrackbar("B", "settings", g_tracking_values + 2, 255, NULL);
+	cvCreateTrackbar("Radius R", "settings", g_tracking_values + 3, 255, NULL);
+	cvCreateTrackbar("Radius G", "settings", g_tracking_values + 4, 255, NULL);
+	cvCreateTrackbar("Radius B", "settings", g_tracking_values + 5, 255, NULL);
+	cvCreateTrackbar("Tracking delay", "settings", &tracking_delay, 10, NULL);
+
+	/* MAIN LOOP GOES HERE */
 	while (1)
 	{
 		cvSetTrackbarPos("R", "settings", g_tracking_values[0]);
 		cvSetTrackbarPos("G", "settings", g_tracking_values[1]);
 		cvSetTrackbarPos("B", "settings", g_tracking_values[2]);
 
-
 		/* retrieving image */
 		frame = cvQueryFrame(capture);
 		dst = cvClone(frame);
-		//cvCopy(frame, dst, NULL);
-
+		
+		/* filtering by required params*/
 		applyFuncOnImage(frame, dst, 4, g_tracking_values, calculateTresholdByRGBValue);
-
-
+		/* creating and adjusting mask */
 		cvCvtColor(dst, bw, CV_BGR2GRAY);
 		cvSmooth(bw, bw, CV_GAUSSIAN, 15, 0, 3, 3);
 		cvDilate(bw, bw, cvCreateStructuringElementEx(3, 3, 1, 1, CV_SHAPE_ELLIPSE, NULL), 2);
 		
 		/* drawing all uniq circles */
-		int n = 0;
-		int n1 = 0;
+		all_circles_count = 0;
+		uniq_circles_count = 0;
 		
-		cir = getAllCirlces(bw, &n1);
-		cir = getUniqCircles(cir, n1, 15, &n);
+		all_circles = getAllCirlces(bw, &all_circles_count);
+		uniq_circles = getUniqCircles(all_circles, all_circles_count, MIN_CIRCLE_RADIUS, &uniq_circles_count);
 
-		if (n > 10) n = 10;
+		if (uniq_circles_count > 10) uniq_circles_count = 10;
 
-		if (n == 3)
+		if (uniq_circles_count == 3)
 		{
 			found_data_frame = 1;
 
-			CvPoint centers[3];
+			
 			cvPutText(frame, "Data Frame recognized.", cvPoint(30, 30),
 				&main_font, cvScalar(0, 255, 0, 0));
 
-			calculateCircles(cir, &top_left, &top_right, &bottom_left, &sync, &data);
+			calculateCircles(uniq_circles, &top_left, &top_right, &bottom_left, &sync, &data);
 
 			for (int i = 0; i < 3; i++)
 			{
-				cur = cir[i];
-				centers[i].x = cur.x;
-				centers[i].y = cur.y;
-				old_circles[i] = cir[i];
+				current_circle = uniq_circles[i];
+				centers[i].x = current_circle.x;
+				centers[i].y = current_circle.y;
+				old_circles[i] = uniq_circles[i];
 			}
 
 			/* drawing markers */
@@ -201,20 +208,16 @@ int main(int argc, char* argv[])
 			data_buf[255] = bitSet(frame, &data, 230);
 			sync_buf_bckp[255] = sync_buf[255];
 			data_buf_bckp[255] = data_buf[255];
-			if (bitSet(frame, &sync, 230))
+			if (sync_buf[255])
 			{
 				cvPutText(frame, "Sync bit is enabled.", cvPoint(30, 60),
 					&main_font, cvScalar(255, 0, 0, 0));
 				
-				if (bitSet(frame, &data, 230))
+				if (data_buf[255])
 				{
 					cvPutText(frame, "Data bit is enabled.", cvPoint(30, 90),
 						&main_font, cvScalar(255, 255, 255, 0));
 				}
-			}
-			else
-			{
-				
 			}
 		
 		}
@@ -228,8 +231,8 @@ int main(int argc, char* argv[])
 		}
 
 		/* now that we have drawn graph we are free to analyze its results */
-		sync_state = getBitState(sync_buf, CIRCLE_TIME);
-		data_state = getBitState(data_buf, CIRCLE_TIME);
+		sync_state = getBitState(sync_buf, tracking_delay);
+		data_state = getBitState(data_buf, tracking_delay);
 
 		/* analysing image begins */
 		if (sync_timeout > 0) sync_timeout--;
@@ -237,7 +240,7 @@ int main(int argc, char* argv[])
 
 		if (sync_state && !data_state)
 		{
-			//printf("Only sync.\n");
+			/* printf("Only sync.\n"); */
 			sync_timeout = 10;
 			if (is_data_transferring)
 			{
@@ -247,7 +250,7 @@ int main(int argc, char* argv[])
 		}
 		if (!sync_state && data_state)
 		{
-			//printf("Only data.\n");
+			/* printf("Only data.\n"); */
 			data_timeout = 10;
 			if (sync_timeout > 0)
 			{
@@ -305,6 +308,8 @@ int main(int argc, char* argv[])
 		
 		/* freeing up */
 		cvReleaseImage(&dst);
+		free(all_circles);
+		free(uniq_circles);
 		/* should NOT release bw and frame */
 		
 	}
