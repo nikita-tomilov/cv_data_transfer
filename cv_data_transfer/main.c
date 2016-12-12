@@ -209,7 +209,7 @@ int main(int argc, char* argv[])
 
 			calculateCircles(uniq_circles, &top_left, &top_right, &bottom_left, &sync, &data);
 
-			for (int i = 0; i < 3; i++)
+			for (i = 0; i < 3; i++)
 			{
 				current_circle = uniq_circles[i];
 				centers[i].x = current_circle.x;
@@ -246,7 +246,7 @@ int main(int argc, char* argv[])
 		}
 
 		/* getting ready to draw fancy graph */
-		for (int i = 0; i < 255; i++)
+		for (i = 0; i < 255; i++)
 		{
 			sync_buf[i] = sync_buf[i + 1];
 			data_buf[i] = data_buf[i + 1];
@@ -275,7 +275,7 @@ int main(int argc, char* argv[])
 		}
 
 		/* drawing fancy graph */
-		for (int i = 1; i < 256; i++)
+		for (i = 1; i < 256; i++)
 		{
 			cvDrawLine(frame, cvPoint(i * 2, 350 - sync_buf_bckp[i - 1] / 4), cvPoint(i * 2 + 1, 350 - sync_buf_bckp[i] / 4), cvScalar(0, 0, 255, 0), 1, 1, 0);
 			cvDrawLine(frame, cvPoint(i * 2, 450 - data_buf_bckp[i - 1] / 4), cvPoint(i * 2 + 1, 450 - data_buf_bckp[i] / 4), cvScalar(255, 0, 0, 0), 1, 1, 0);
@@ -328,7 +328,7 @@ int main(int argc, char* argv[])
 			current_parity = 0;
 			incoming_value = 0;
 			is_data_transferring = 0;
-			for (int i = 0; i < 8; i++)
+			for (i = 0; i < 8; i++)
 			{
 				printf("%d", recieved_bits[i]);
 				incoming_value = incoming_value * 2 + recieved_bits[i];

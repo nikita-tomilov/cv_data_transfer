@@ -31,6 +31,15 @@ void setPixel(IplImage* img, int x, int y, Pixel_t px)
 	ptr[3 * x + 2] = px.r;
 }
 
+static int mmax(int a, int b)
+{
+	return (a > b ? a : b);
+}
+static int mmin(int a, int b)
+{
+	return (a < b ? a : b);
+}
+
 /* used to calculate erode pixel in image */
 /* uses no arguments */
 Pixel_t calculateErodePixel(IplImage* img, int x, int y, int argc, int* argv)
@@ -41,13 +50,13 @@ Pixel_t calculateErodePixel(IplImage* img, int x, int y, int argc, int* argv)
 	tmp.r = 255;
 	tmp.g = 255;
 	tmp.b = 255;
-	for (i = max(y - radius, 0); i <= min(y + radius, img->height - 1); i++)
-		for (j = max(x - radius, 0); j <= min(x + radius, img->width - 1); j++)
+	for (i = mmax(y - radius, 0); i <= mmin(y + radius, img->height - 1); i++)
+		for (j = mmax(x - radius, 0); j <= mmin(x + radius, img->width - 1); j++)
 		{
 			cur = getPixel(img, j, i);
-			tmp.r = min(tmp.r, cur.r);
-			tmp.g = min(tmp.g, cur.g);
-			tmp.b = min(tmp.b, cur.b);
+			tmp.r = mmin(tmp.r, cur.r);
+			tmp.g = mmin(tmp.g, cur.g);
+			tmp.b = mmin(tmp.b, cur.b);
 		}
 	return tmp;
 }
@@ -91,13 +100,13 @@ Pixel_t calculateTresholdByRGBValue(IplImage* img, int x, int y, int argc, int* 
 Pixel_t calculateSaturationPixel(IplImage* img, int x, int y, int argc, int* argv)
 {
 	Pixel_t cur = getPixel(img, x, y);
-	cur.r = min((int)(cur.r * 1.0 * argv[0] / 100), 255);
+	cur.r = mmin((int)(cur.r * 1.0 * argv[0] / 100), 255);
 	return cur;
 }
 
 /* applies function on whole image */
 /* recieves pointer on pixel calculation and invokes it for each pixel */
-void applyFuncOnImage(IplImage* src, IplImage* dest, int argc, int* argv, Pixel_t(pixelfunc)(IplImage*, int, int, int*))
+void applyFuncOnImage(IplImage* src, IplImage* dest, int argc, int* argv, Pixel_t(pixelfunc)(IplImage*, int, int, int, int*))
 {
 	int x, y;
 	Pixel_t px;
