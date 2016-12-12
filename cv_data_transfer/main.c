@@ -16,6 +16,9 @@ int g_tracking_values[] = { 0, 0, 0, 5, 5, 5 };
 /* main frame for captured image */
 IplImage* frame;
 
+/* flag that transfer aborted */
+int is_abort_pressed = 0;
+
 /* used to get bit state in a graph */
 int getBitState(int* array, int delta)
 {
@@ -42,6 +45,10 @@ void mouseCallback(int mevent, int x, int y, int flags, void* userdata)
 		g_tracking_values[1] = px.g;
 		g_tracking_values[2] = px.b;
 		/* printf("lmouse %d %d\n", x, y); */
+	}
+	if (mevent == CV_EVENT_RBUTTONUP)
+	{
+		is_abort_pressed = 1;
 	}
 }
 
@@ -141,7 +148,8 @@ int main(int argc, char* argv[])
 	assert(capture);
 
 	/* initialising window */
-	cvNamedWindow("settings", CV_WINDOW_AUTOSIZE);
+	cvNamedWindow("settings", CV_WINDOW_NORMAL);
+	cvResizeWindow("settings", 400, 300);
 	cvNamedWindow("filtered", CV_WINDOW_AUTOSIZE);
 	cvNamedWindow("capture", CV_WINDOW_AUTOSIZE);
 	cvSetMouseCallback("capture", mouseCallback, NULL);
@@ -163,8 +171,6 @@ int main(int argc, char* argv[])
 	cvCreateTrackbar("Radius G", "settings", g_tracking_values + 4, 255, NULL);
 	cvCreateTrackbar("Radius B", "settings", g_tracking_values + 5, 255, NULL);
 	cvCreateTrackbar("Tracking delay", "settings", &tracking_delay, 10, NULL);
-
-	
 
 	/* MAIN LOOP GOES HERE */
 	while (1)
@@ -284,7 +290,7 @@ int main(int argc, char* argv[])
 		if (sync_timeout > 0) sync_timeout--;
 		if (data_timeout > 0) data_timeout--;
 
-		if (sync_state && !data_state)
+		if (sync_state && (data_state == 0))
 		{
 			if (show_all_debug) printf("Only sync enabled.\n"); 
 			sync_timeout = 10;
@@ -302,6 +308,7 @@ int main(int argc, char* argv[])
 			{
 				printf("Got starting marker; transferring began\n");
 				is_data_transferring = 1;
+				recieved_bits_count = 0;
 			}
 		}
 		if (sync_state && data_state)
@@ -337,6 +344,7 @@ int main(int argc, char* argv[])
 				{
 					printf("> Parity OK.\n");
 					fwrite(&incoming_value, sizeof(uint8_t), 1, output_file);
+					//fseek(output_file, sizeof(uint8_t), );
 				}
 			}
 			else
@@ -345,6 +353,14 @@ int main(int argc, char* argv[])
 			}
 			recieved_bits_count = 0;
 			printf("\n");
+		}
+
+		/* if abort pressed */
+		if (is_abort_pressed)
+		{
+			printf("DATA TRANSFER ABORTED.\n");
+			recieved_bits_count = 0;
+			is_abort_pressed = 0;
 		}
 
 		/* showing image */
@@ -365,8 +381,10 @@ int main(int argc, char* argv[])
 		
 	}
 	printf("Closed.\n");
-	//cvReleaseCapture(capture);
+	
+	cvReleaseCapture(&capture);
 	if (write_to_file) fclose(output_file);
 	printf("Bye.\n");
+	return 0;
 }
 
