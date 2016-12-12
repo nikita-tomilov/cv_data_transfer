@@ -33,8 +33,9 @@ Windows with Visual Studio 2013 or later
 
 Windows without VS2013, Linux, MacOS, other Unix-based OS
 
-- Makefile coming soon
-- Or copy-paste sources and run under your IDE, compilers, etc.
+- Download
+- Fix Makefile for your installation dirs and OS (currently it is made for windows)
+- Make and run
 
 ## Command-line parameters
 - -h for help
