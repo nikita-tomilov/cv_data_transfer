@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 
 	/* program settings */
 	int show_all_debug = 0;
-	int write_to_file;
+	int write_to_file = 0;
 
 	/* file IO */
 	FILE* output_file;
@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
 		if (strcmp(argv[i], "-v") == 0) show_all_debug = 1;
 		if (strcmp(argv[i], "-o") == 0)
 		{
-			if (i + 1 == argv)
+			if (i + 1 == argc)
 			{
 				printf("No filename specified.\n");
 				return 0;
@@ -383,7 +383,11 @@ int main(int argc, char* argv[])
 	printf("Closed.\n");
 	
 	cvReleaseCapture(&capture);
-	if (write_to_file) fclose(output_file);
+	if (write_to_file)
+	{
+		printf("File closing.\n");
+		fclose(output_file);
+	}
 	printf("Bye.\n");
 	return 0;
 }
