@@ -1,0 +1,14 @@
+CC              := gcc
+LIBRARIES       := `pkg-config opencv --libs --cflags` -ldl
+MODULES			:= main image_filters image_circles
+SOURCES_PATH	:= ./cv_data_transfer
+SOURCES			:= $(foreach src, $(MODULES), $(SOURCES_PATH)/$(src).c)
+SOURCES_PATH	:= 
+OBJECTS			:= $(foreach obj, $(MODULES), $(OBJECTS_PATH)$(obj).o)
+EXECUTABLE		:= cv_data_transfer_bin
+
+all: main
+
+main: 
+	$(CC) $(CFLAGS) -c $(SOURCES) `pkg-config opencv --libs --cflags`
+	$(CC) $(LIBRARIES) -o $(EXECUTABLE) $(OBJECTS) $(INCLUDE_LIBRARIES)
