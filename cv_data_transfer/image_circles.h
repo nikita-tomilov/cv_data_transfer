@@ -23,11 +23,11 @@ typedef struct
 
 /* used to retrieve all circles from image */
 /* returns array of circles and stores the amount of them in n */
-Circle_t* getAllCirlces(IplImage* img, int* n);
+Circle_t* getAllCirlces(IplImage* img, size_t* n);
 
 /* used to retrieve uniq circles from image */
 /* returns array of circles and stores the amount of them in outputAmount */
-Circle_t* getUniqCircles(Circle_t* inputArray, int inputAmount, int minRadius, int* outputAmount);
+Circle_t* getUniqCircles(Circle_t* inputArray, size_t inputAmount, int minRadius, size_t* outputAmount);
 
 /* used to define circles on image for their easier usage */
 void calculateCircles(Circle_t* array, Circle_t* top_left, Circle_t* top_right, Circle_t* bottom_left, Circle_t* sync, Circle_t* data);

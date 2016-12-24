@@ -15,9 +15,9 @@ static int square(int x)
 
 /* used to retrieve all circles from image */
 /* returns array of circles and stores the amount of them in n */
-Circle_t* getAllCirlces(IplImage* img, int* n)
+Circle_t* getAllCirlces(IplImage* img, size_t* n)
 {
-	int i;
+	size_t i;
 	CvSeq* hc_out_seq;
 	CvMemStorage* hc_out_mem = cvCreateMemStorage(0);
 	*n = 0;
@@ -52,9 +52,9 @@ Circle_t* getAllCirlces(IplImage* img, int* n)
 /* used to retrieve uniq circles from image */
 /* returns array of circles and stores the amount of them in outputAmount */
 
-Circle_t* getUniqCircles(Circle_t* inputArray, int inputAmount, int minRadius, int* outputAmount)
+Circle_t* getUniqCircles(Circle_t* inputArray, size_t inputAmount, int minRadius, size_t* outputAmount)
 {
-	int n = -1;
+	int n = 0;
 	int i = 0;
 	int j = 0;
 	int f = 1;
