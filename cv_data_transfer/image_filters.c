@@ -12,9 +12,9 @@ int abs(int x)
 }
 
 /* used to get pixel from image */
-Pixel_t getPixel(IplImage* img, int x, int y)
+struct Pixel_t getPixel(IplImage* img, int x, int y)
 {
-	Pixel_t px;
+	struct Pixel_t px;
 	uchar* ptr = (uchar*)(img->imageData + y * img->widthStep);
 	px.b = ptr[3 * x];
 	px.g = ptr[3 * x + 1];
@@ -23,7 +23,7 @@ Pixel_t getPixel(IplImage* img, int x, int y)
 }
 
 /* used to set pixel in image */
-void setPixel(IplImage* img, int x, int y, Pixel_t px)
+void setPixel(IplImage* img, int x, int y, struct Pixel_t px)
 {
 	uchar* ptr = (uchar*)(img->imageData + y * img->widthStep);
 	ptr[3 * x] = px.b;
@@ -42,11 +42,11 @@ static int mmin(int a, int b)
 
 /* used to calculate erode pixel in image */
 /* uses no arguments */
-Pixel_t calculateErodePixel(IplImage* img, int x, int y, int argc, int* argv)
+struct Pixel_t calculateErodePixel(IplImage* img, int x, int y, int argc, int* argv)
 {
 	int i, j;
 	int radius = argv[0];
-	Pixel_t tmp, cur;
+	struct Pixel_t tmp, cur;
 	tmp.r = 255;
 	tmp.g = 255;
 	tmp.b = 255;
@@ -68,9 +68,9 @@ R = S
 
 /* used to make treshold on blue channel (blue or hue) */
 /* uses two arguments - lower (0) and upper (1) bound */
-Pixel_t calculateBTresholdPixel(IplImage* img, int x, int y, int argc, int* argv)
+struct Pixel_t calculateBTresholdPixel(IplImage* img, int x, int y, int argc, int* argv)
 {
-	Pixel_t cur = getPixel(img, x, y);
+	struct Pixel_t cur = getPixel(img, x, y);
 	if (cur.b >= argv[0] && cur.b <= argv[1]) return cur;
 	cur.b = 0;
 	cur.g = 0;
@@ -80,10 +80,10 @@ Pixel_t calculateBTresholdPixel(IplImage* img, int x, int y, int argc, int* argv
 
 /* used to make treshold on RGB in required radius */
 /* uses four arguments - r, g, b and radius in which point still counts */
-Pixel_t calculateTresholdByRGBValue(IplImage* img, int x, int y, int argc, int* argv)
+struct Pixel_t calculateTresholdByRGBValue(IplImage* img, int x, int y, int argc, int* argv)
 {
-	Pixel_t cur = getPixel(img, x, y);
-	Pixel_t ret;
+	struct Pixel_t cur = getPixel(img, x, y);
+	struct Pixel_t ret;
 	ret.b = 0;
 	ret.g = 0;
 	ret.r = 0;
@@ -97,19 +97,19 @@ Pixel_t calculateTresholdByRGBValue(IplImage* img, int x, int y, int argc, int* 
 
 /* used to change saturation (or red channel) */
 /* uses one argument - saturation percentage */
-Pixel_t calculateSaturationPixel(IplImage* img, int x, int y, int argc, int* argv)
+struct Pixel_t calculateSaturationPixel(IplImage* img, int x, int y, int argc, int* argv)
 {
-	Pixel_t cur = getPixel(img, x, y);
+	struct Pixel_t cur = getPixel(img, x, y);
 	cur.r = mmin((int)(cur.r * 1.0 * argv[0] / 100), 255);
 	return cur;
 }
 
 /* applies function on whole image */
 /* recieves pointer on pixel calculation and invokes it for each pixel */
-void applyFuncOnImage(IplImage* src, IplImage* dest, int argc, int* argv, Pixel_t(pixelfunc)(IplImage*, int, int, int, int*))
+void applyFuncOnImage(IplImage* src, IplImage* dest, int argc, int* argv, struct Pixel_t(pixelfunc)(IplImage*, int, int, int, int*))
 {
 	int x, y;
-	Pixel_t px;
+	struct Pixel_t px;
 	px.r = 255;
 	px.g = 0;
 	px.b = 0;

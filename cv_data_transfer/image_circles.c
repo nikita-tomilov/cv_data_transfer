@@ -15,7 +15,7 @@ static int square(int x)
 
 /* used to retrieve all circles from image */
 /* returns array of circles and stores the amount of them in n */
-Circle_t* getAllCirlces(IplImage* img, size_t* n)
+struct Circle_t* getAllCirlces(IplImage* img, size_t* n)
 {
 	size_t i;
 	CvSeq* hc_out_seq;
@@ -34,8 +34,8 @@ Circle_t* getAllCirlces(IplImage* img, size_t* n)
 
 	*n = hc_out_seq->total;
 
-	Circle_t* tmp_array = (Circle_t*)malloc(*n * sizeof(Circle_t));
-	Circle_t tmp_entry;
+	struct Circle_t* tmp_array = (struct Circle_t*)malloc(*n * sizeof(struct Circle_t));  //TODO: NO MALLOC
+	struct Circle_t tmp_entry;
 
 	//printf("%d\n", hc_out_seq->elem_size);
 	for (i = 0; i < hc_out_seq->total; i++)
@@ -52,14 +52,14 @@ Circle_t* getAllCirlces(IplImage* img, size_t* n)
 /* used to retrieve uniq circles from image */
 /* returns array of circles and stores the amount of them in outputAmount */
 
-Circle_t* getUniqCircles(Circle_t* inputArray, size_t inputAmount, int minRadius, size_t* outputAmount)
+struct Circle_t* getUniqCircles(struct Circle_t* inputArray, size_t inputAmount, int minRadius, size_t* outputAmount)
 {
 	int n = 0;
 	int i = 0;
 	int j = 0;
 	int f = 1;
 
-	Circle_t* tmpArray = (Circle_t*)malloc(inputAmount * sizeof(Circle_t));
+	struct Circle_t* tmpArray = (struct Circle_t*)malloc(inputAmount * sizeof(struct Circle_t));
 
 	for (i = 0; i < inputAmount; i++)
 	{
@@ -81,9 +81,9 @@ Circle_t* getUniqCircles(Circle_t* inputArray, size_t inputAmount, int minRadius
 
 /* used to define circles on image for their easier usage */
 
-void calculateCircles(Circle_t* array, Circle_t* top_left, Circle_t* top_right, Circle_t* bottom_left, Circle_t* sync, Circle_t* data)
+void calculateCircles(struct Circle_t* array, struct Circle_t* top_left, struct Circle_t* top_right, struct Circle_t* bottom_left, struct Circle_t* sync, struct Circle_t* data)
 {
-	Circle_t middle;
+	struct Circle_t middle;
 	size_t i;
 	middle.x = ((array[0].x) + (array[1].x) + (array[2].x)) / 3.0f;
 	middle.y = ((array[0].y) + (array[1].y) + (array[2].y)) / 3.0f;
@@ -112,9 +112,9 @@ void calculateCircles(Circle_t* array, Circle_t* top_left, Circle_t* top_right, 
 
 /* returns 1 if bit represented by circle is set to 1 and 0 otherwise */
 
-int bitSet(IplImage* image, Circle_t* circle, float treshold)
+int bitSet(IplImage* image, struct Circle_t* circle, float treshold)
 {
-	Pixel_t px;
+	struct Pixel_t px;
 	float curval;
 	px = getPixel(image, circle->x, circle->y);
 	curval = (px.r + px.g + px.b) / 3.0f;

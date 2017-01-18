@@ -14,25 +14,24 @@ union CustomData {
 };
 
 /* used for founded circle info */
-typedef struct
+struct Circle_t
 {
 	float x;
 	float y;
 	float r;
-} Circle_t;
-
+};
 /* used to retrieve all circles from image */
 /* returns array of circles and stores the amount of them in n */
-Circle_t* getAllCirlces(IplImage* img, size_t* n);
+struct Circle_t* getAllCirlces(IplImage* img, size_t* n);
 
 /* used to retrieve uniq circles from image */
 /* returns array of circles and stores the amount of them in outputAmount */
-Circle_t* getUniqCircles(Circle_t* inputArray, size_t inputAmount, int minRadius, size_t* outputAmount);
+struct Circle_t* getUniqCircles(struct Circle_t* inputArray, size_t inputAmount, int minRadius, size_t* outputAmount);
 
 /* used to define circles on image for their easier usage */
-void calculateCircles(Circle_t* array, Circle_t* top_left, Circle_t* top_right, Circle_t* bottom_left, Circle_t* sync, Circle_t* data);
+void calculateCircles(struct Circle_t* array, struct Circle_t* top_left, struct Circle_t* top_right, struct Circle_t* bottom_left, struct Circle_t* sync, struct Circle_t* data);
 
 /* returns 1 if bit represented by circle is set to 1 and 0 otherwise */
-int bitSet(IplImage* image, Circle_t* circle, float treshold);
+int bitSet(IplImage* image, struct Circle_t* circle, float treshold);
 
 #endif

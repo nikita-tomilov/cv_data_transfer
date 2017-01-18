@@ -20,7 +20,7 @@ IplImage* frame;
 int is_abort_pressed = 0;
 
 /* used to get bit state in a graph */
-int getBitState(int* array, int delta)
+int getBitState(int* array, int delta)   //TODO: CHANGE INT TO SIZE_T?
 {
 	int i;
 	for (i = 0; i < delta; i++)
@@ -39,7 +39,7 @@ void mouseCallback(int mevent, int x, int y, int flags, void* userdata)
 {
 	if (mevent == CV_EVENT_LBUTTONUP)
 	{
-		Pixel_t px;
+		struct Pixel_t px;
 		px = getPixel(frame, x, y);
 		g_tracking_values[0] = px.r;
 		g_tracking_values[1] = px.g;
@@ -73,18 +73,18 @@ int main(int argc, char* argv[])
 	
 	
 	/* initialising markers, sync and data circles */
-	Circle_t old_circles[3];
+	struct Circle_t old_circles[3];
 	int found_data_frame = 0;
-	Circle_t top_left;
-	Circle_t top_right;
-	Circle_t bottom_left;
-	Circle_t sync, data;
+	struct Circle_t top_left;
+	struct Circle_t top_right;
+	struct Circle_t bottom_left;
+	struct Circle_t sync, data;
 
 	/* all and uniq circles in locating data frame */
 	size_t all_circles_count, uniq_circles_count;
-	Circle_t* all_circles;
-	Circle_t* uniq_circles;
-	Circle_t current_circle;
+	struct Circle_t* all_circles;
+	struct Circle_t* uniq_circles;
+	struct Circle_t current_circle;
 	CvPoint centers[3];
 
 	/* buffers for tracked values */
@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
 	for (i = 0; i < argc; i++)
 	{
 		/* printf(">> %s\n", argv[i]); */
-		if (strcmp(argv[i], "-h") == 0)
+		if (strcmp(argv[i], "-h") == 0) //TODO: SINGLE PRINTF??
 		{
 			printf("cv_data_transfer, PC side\n");
 			printf("https://github.com/Programmer74/cv_data_transfer \n");
