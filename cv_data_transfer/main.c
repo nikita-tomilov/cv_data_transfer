@@ -20,9 +20,9 @@ IplImage* frame;
 int is_abort_pressed = 0;
 
 /* used to get bit state in a graph */
-int getBitState(int* array, int delta)   //TODO: CHANGE INT TO SIZE_T?
+int getBitState(int* array, size_t delta)
 {
-	int i;
+	size_t i;
 	for (i = 0; i < delta; i++)
 	{
 		if (array[255 - i] <= 10) return 0; //hole => bit not set now
@@ -304,7 +304,7 @@ int main(int argc, char* argv[])
 		{
 			if (show_all_debug) printf("Only data enabled.\n");
 			data_timeout = 10;
-			if (sync_timeout > 0)
+			if (sync_timeout > 0 && !is_data_transferring)
 			{
 				printf("Got starting marker; transferring began\n");
 				is_data_transferring = 1;
