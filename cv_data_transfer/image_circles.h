@@ -22,11 +22,11 @@ struct Circle_t
 };
 /* used to retrieve all circles from image */
 /* returns array of circles and stores the amount of them in n */
-struct Circle_t* getAllCirlces(IplImage* img, size_t* n);
+void getAllCirlces(IplImage* img, struct Circle_t* buf, size_t* n);
 
 /* used to retrieve uniq circles from image */
 /* returns array of circles and stores the amount of them in outputAmount */
-struct Circle_t* getUniqCircles(struct Circle_t* inputArray, size_t inputAmount, int minRadius, size_t* outputAmount);
+void getUniqCircles(struct Circle_t* inputArray, size_t inputAmount, int minRadius, struct Circle_t* outputArray, size_t* outputAmount);
 
 /* used to define circles on image for their easier usage */
 void calculateCircles(struct Circle_t* array, struct Circle_t* top_left, struct Circle_t* top_right, struct Circle_t* bottom_left, struct Circle_t* sync, struct Circle_t* data);

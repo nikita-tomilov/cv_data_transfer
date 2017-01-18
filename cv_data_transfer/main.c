@@ -82,8 +82,8 @@ int main(int argc, char* argv[])
 
 	/* all and uniq circles in locating data frame */
 	size_t all_circles_count, uniq_circles_count;
-	struct Circle_t* all_circles;
-	struct Circle_t* uniq_circles;
+	struct Circle_t all_circles[MAX_CIRCLES];
+	struct Circle_t uniq_circles[MAX_UNIQ_CIRCLES];
 	struct Circle_t current_circle;
 	CvPoint centers[3];
 
@@ -194,8 +194,8 @@ int main(int argc, char* argv[])
 		all_circles_count = 0;
 		uniq_circles_count = 0;
 		
-		all_circles = getAllCirlces(bw, &all_circles_count);
-		uniq_circles = getUniqCircles(all_circles, all_circles_count, MIN_CIRCLE_RADIUS, &uniq_circles_count);
+		getAllCirlces(bw, all_circles, &all_circles_count);
+		getUniqCircles(all_circles, all_circles_count, MIN_CIRCLE_RADIUS, uniq_circles, &uniq_circles_count);
 
 		if (uniq_circles_count > 10) uniq_circles_count = 10;
 
@@ -375,8 +375,6 @@ int main(int argc, char* argv[])
 		
 		/* freeing up */
 		cvReleaseImage(&dst);
-		free(all_circles);
-		free(uniq_circles);
 		/* should NOT release bw and frame */
 		
 	}
