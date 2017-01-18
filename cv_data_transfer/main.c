@@ -44,7 +44,7 @@ void mouseCallback(int mevent, int x, int y, int flags, void* userdata)
 		g_tracking_values[0] = px.r;
 		g_tracking_values[1] = px.g;
 		g_tracking_values[2] = px.b;
-		/* printf("lmouse %d %d\n", x, y); */
+		/* puts("lmouse %d %d", x, y); */
 	}
 	if (mevent == CV_EVENT_RBUTTONUP)
 	{
@@ -52,6 +52,7 @@ void mouseCallback(int mevent, int x, int y, int flags, void* userdata)
 	}
 }
 
+/* */
 int main(int argc, char* argv[])
 {
 	/* VARIABLES */
@@ -110,15 +111,15 @@ int main(int argc, char* argv[])
 	/* WAIT! Let's check program launch params */
 	for (i = 0; i < argc; i++)
 	{
-		/* printf(">> %s\n", argv[i]); */
-		if (strcmp(argv[i], "-h") == 0) //TODO: SINGLE PRINTF??
+		/* puts(">> %s", argv[i]); */
+		if (strcmp(argv[i], "-h") == 0) 
 		{
-			printf("cv_data_transfer, PC side\n");
-			printf("https://github.com/Programmer74/cv_data_transfer \n");
-			printf("Additional parameters:\n");
-			printf(" -h Show this help\n");
-			printf(" -o <filename> - Write recieved bytes to file\n");
-			printf(" -v Show all logs\n");
+			puts("cv_data_transfer, PC side\
+			https://github.com/Programmer74/cv_data_transfer \
+			Additional parameters: \
+			 -h Show this help \
+			 -o <filename> - Write recieved bytes to file \
+			 -v Show all logs");
 			return 0;
 		}
 		if (strcmp(argv[i], "-v") == 0) show_all_debug = 1;
@@ -126,13 +127,13 @@ int main(int argc, char* argv[])
 		{
 			if (i + 1 == argc)
 			{
-				printf("No filename specified.\n");
+				puts("No filename specified.");
 				return 0;
 			}
 			output_file = fopen(argv[i + 1], "wb");
 			if (output_file == NULL)
 			{
-				printf("Cannot open file %s\n.", argv[i + 1]);
+				printf("Cannot open file %s.\n", argv[i + 1]);
 				return 0;
 			}
 			write_to_file = 1;
@@ -140,7 +141,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	printf("cv_data_transfer successfully launched.\n");
+	puts("cv_data_transfer successfully launched.");
 
 	/* UI AND OPENCV */
 	/* initialising camera */
@@ -292,7 +293,7 @@ int main(int argc, char* argv[])
 
 		if (sync_state && (data_state == 0))
 		{
-			if (show_all_debug) printf("Only sync enabled.\n"); 
+			if (show_all_debug) puts("Only sync enabled."); 
 			sync_timeout = 10;
 			if (is_data_transferring)
 			{
@@ -302,18 +303,18 @@ int main(int argc, char* argv[])
 		}
 		if (!sync_state && data_state)
 		{
-			if (show_all_debug) printf("Only data enabled.\n");
+			if (show_all_debug) puts("Only data enabled.");
 			data_timeout = 10;
 			if (sync_timeout > 0 && !is_data_transferring)
 			{
-				printf("Got starting marker; transferring began\n");
+				puts("Got starting marker; transferring began");
 				is_data_transferring = 1;
 				recieved_bits_count = 0;
 			}
 		}
 		if (sync_state && data_state)
 		{
-			if (show_all_debug) printf("Both are enabled.\n");
+			if (show_all_debug) puts("Both are enabled.");
 			if (is_data_transferring)
 			{
 				recieved_bits[recieved_bits_count] = 1;
@@ -324,7 +325,7 @@ int main(int argc, char* argv[])
 		/* byte recieved */
 		if (recieved_bits_count == 9)
 		{
-			printf("Got byte 0b");
+			printf("Got byte 0b"); /* has to be printf for no \n on the end of string */
 			current_parity = 0;
 			incoming_value = 0;
 			is_data_transferring = 0;
@@ -338,27 +339,27 @@ int main(int argc, char* argv[])
 			current_parity = (current_parity % 2 == 0 ? 0 : 1);
 			if (current_parity == recieved_bits[8])
 			{
-				if (show_all_debug) printf("> Logged to file.\n");
+				if (show_all_debug) puts("> Logged to file.");
 				printf("> Recieved byte %d == '%c'\n", incoming_value, (char)incoming_value);
 				if (write_to_file)
 				{
-					printf("> Parity OK.\n");
+					puts("> Parity OK.");
 					fwrite(&incoming_value, sizeof(uint8_t), 1, output_file);
 					//fseek(output_file, sizeof(uint8_t), );
 				}
 			}
 			else
 			{
-				printf("> Parity FAILED\n");
+				puts("> Parity FAILED");
 			}
 			recieved_bits_count = 0;
-			printf("\n");
+			puts("");
 		}
 
 		/* if abort pressed */
 		if (is_abort_pressed)
 		{
-			printf("DATA TRANSFER ABORTED.\n");
+			puts("DATA TRANSFER ABORTED.");
 			recieved_bits_count = 0;
 			is_abort_pressed = 0;
 		}
@@ -378,15 +379,15 @@ int main(int argc, char* argv[])
 		/* should NOT release bw and frame */
 		
 	}
-	printf("Closed.\n");
+	puts("Closed.");
 	
 	cvReleaseCapture(&capture);
 	if (write_to_file)
 	{
-		printf("File closing.\n");
+		puts("File closing.");
 		fclose(output_file);
 	}
-	printf("Bye.\n");
+	puts("Bye.");
 	return 0;
 }
 
