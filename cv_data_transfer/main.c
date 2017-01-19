@@ -81,12 +81,13 @@ struct launch_params_t getLaunchParams(int argc, char* argv[])
 		/* puts(">> %s", argv[i]); */
 		if (strcmp(argv[i], "-h") == 0)
 		{
-			puts("cv_data_transfer, PC side\
-				 https://github.com/Programmer74/cv_data_transfer \
-				Additional parameters: \
-				-h Show this help \
-				-o <filename> - Write recieved bytes to file \
-				-v Show all logs");
+			puts("\n\
+				 cv_data_transfer, PC side\n\
+				 https://github.com/Programmer74/cv_data_transfer \n\
+				 Additional parameters: \n\
+				 -h Show this help \n\
+				 -o <filename> - Write recieved bytes to file \n\
+				 -v Show all logs\n");
 			exit(0);
 		}
 		if (strcmp(argv[i], "-v") == 0) current.show_all_debug = 1;
@@ -163,26 +164,10 @@ struct opencv_stuff_t initOpenCVGui()
 	return current;
 }
 
-/* updates trackbars for current colors */
-void updateTrackbars()
+/* structure to hold circles and void to draw them */
+struct opencv_circles_t
 {
-	cvSetTrackbarPos("R", "settings", g_tracking_values[0]);
-	cvSetTrackbarPos("G", "settings", g_tracking_values[1]);
-	cvSetTrackbarPos("B", "settings", g_tracking_values[2]);
-}
-
-/* */
-int main(int argc, char* argv[])
-{
-	/* VARIABLES */
-
-	/* iterators */
-	size_t i;
-
-
-	/* initialising markers, sync and data circles */
 	struct Circle_t old_circles[3];
-	int found_data_frame = 0;
 	struct Circle_t top_left;
 	struct Circle_t top_right;
 	struct Circle_t bottom_left;
@@ -194,27 +179,234 @@ int main(int argc, char* argv[])
 	struct Circle_t uniq_circles[MAX_UNIQ_CIRCLES];
 	struct Circle_t current_circle;
 	CvPoint centers[3];
+};
+void parseAndDrawCircles(struct opencv_stuff_t opencv_vars, struct opencv_circles_t* circles, int found_data_frame)
+{
+	size_t i;
+	if (circles->uniq_circles_count == 3)
+	{
 
+
+
+		cvPutText(frame, "Data Frame recognized.", cvPoint(30, 30),
+			&(opencv_vars.main_font), cvScalar(0, 255, 0, 0));
+
+		calculateCircles(circles->uniq_circles, &(circles->top_left), &(circles->top_right), &(circles->bottom_left), &(circles->sync), &(circles->data));
+
+		for (i = 0; i < 3; i++)
+		{
+			circles->current_circle = circles->uniq_circles[i];
+			circles->centers[i].x = circles->current_circle.x;
+			circles->centers[i].y = circles->current_circle.y;
+			circles->old_circles[i] = circles->uniq_circles[i];
+		}
+
+		/* drawing markers */
+		cvCircle(frame, cvPoint(circles->top_left.x, circles->top_left.y), circles->top_left.r, cvScalar(0, 0, 255, 0), 1, 8, 0);
+		cvCircle(frame, cvPoint(circles->top_right.x, circles->top_right.y), circles->top_right.r, cvScalar(0, 0, 255, 0), 1, 8, 0);
+		cvCircle(frame, cvPoint(circles->bottom_left.x, circles->bottom_left.y), circles->bottom_left.r, cvScalar(0, 0, 255, 0), 1, 8, 0);
+		/* drawing sync and data */
+		cvCircle(frame, cvPoint(circles->data.x, circles->data.y), circles->data.r, cvScalar(255, 255, 255, 0), 1, 8, 0);
+		cvCircle(frame, cvPoint(circles->sync.x, circles->sync.y), circles->sync.r, cvScalar(255, 0, 0, 0), 1, 8, 0);
+		/*drawing beautiful lines */
+		/*cvLine(frame, centers[0], centers[1], cvScalar(0, 0, 255, 0), 1, CV_AA, 0);
+		cvLine(frame, centers[1], centers[2], cvScalar(0, 0, 255, 0), 1, CV_AA, 0);
+		cvLine(frame, centers[0], centers[2], cvScalar(0, 0, 255, 0), 1, CV_AA, 0);*/
+	}
+	else
+	{
+		cvPutText(frame, "No Data Frame recognized.", cvPoint(30, 30),
+			&(opencv_vars.main_font), cvScalar(0, 0, 255, 0));
+		if (found_data_frame)
+		{
+			/* drawing markers */
+			cvCircle(frame, cvPoint(circles->top_left.x, circles->top_left.y), circles->top_left.r, cvScalar(0, 0, 128, 0), 1, 8, 0);
+			cvCircle(frame, cvPoint(circles->top_right.x, circles->top_right.y), circles->top_right.r, cvScalar(0, 0, 128, 0), 1, 8, 0);
+			cvCircle(frame, cvPoint(circles->bottom_left.x, circles->bottom_left.y), circles->bottom_left.r, cvScalar(0, 0, 128, 0), 1, 8, 0);
+			/* drawing sync and data */
+			cvCircle(frame, cvPoint(circles->data.x, circles->data.y), circles->data.r, cvScalar(128, 128, 128, 0), 1, 8, 0);
+			cvCircle(frame, cvPoint(circles->sync.x, circles->sync.y), circles->sync.r, cvScalar(128, 128, 128, 0), 1, 8, 0);
+		}
+	}
+
+}
+
+/* structure to hold data parsing buffers, void to init them */
+struct opencv_dataparsebuffs_t
+{
 	/* buffers for tracked values */
-	int* sync_buf = (int*)calloc(256, sizeof(int));
-	int* data_buf = (int*)calloc(256, sizeof(int));
+	int* sync_buf;
+	int* data_buf;
 	/* and backups to draw graph */
-	int* sync_buf_bckp = (int*)calloc(256, sizeof(int));
-	int* data_buf_bckp = (int*)calloc(256, sizeof(int));
+	int* sync_buf_bckp;
+	int* data_buf_bckp;
 	/* states */
-	int sync_state = 0;
-	int data_state = 0;
+	int sync_state;
+	int data_state;
 	/* timeouts */
-	int sync_timeout = 0;
-	int data_timeout = 0;
+	int sync_timeout;
+	int data_timeout;
 
 	/* recieved data parsing */
-	int* recieved_bits = (int*)calloc(9, sizeof(int)); /* 8 + parity */
-	int recieved_bits_count = 0;
-	int is_data_transferring = 0;
-	uint8_t incoming_value = 0;
-	int current_parity = 0;
-	
+	int* recieved_bits;
+	int recieved_bits_count;
+	int is_data_transferring;
+	uint8_t incoming_value;
+	int current_parity;
+};
+struct opencv_dataparsebuffs_t initDataParsingBuffers()
+{
+	struct opencv_dataparsebuffs_t current;
+	/* buffers for tracked values */
+	current.sync_buf = (int*)calloc(256, sizeof(int));
+	current.data_buf = (int*)calloc(256, sizeof(int));
+	/* and backups to draw graph */
+	current.sync_buf_bckp = (int*)calloc(256, sizeof(int));
+	current.data_buf_bckp = (int*)calloc(256, sizeof(int));
+	/* states */
+	current.sync_state = 0;
+	current.data_state = 0;
+	/* timeouts */
+	current.sync_timeout = 0;
+	current.data_timeout = 0;
+
+	/* recieved data parsing */
+	current.recieved_bits = (int*)calloc(9, sizeof(int)); /* 8 + parity */
+	current.recieved_bits_count = 0;
+	current.is_data_transferring = 0;
+	current.incoming_value = 0;
+	current.current_parity = 0;
+
+	return current;
+}
+
+/* void to capture actual circles data and draw fancy captured brightness graph */
+void captureAndDrawFancyGraph(struct opencv_stuff_t opencv_vars, struct opencv_circles_t circles, struct opencv_dataparsebuffs_t* databuffs, int found_data_frame)
+{
+	size_t i;
+
+	/* getting ready to draw fancy graph */
+	for (i = 0; i < 255; i++)
+	{
+		databuffs->sync_buf[i] = databuffs->sync_buf[i + 1];
+		databuffs->data_buf[i] = databuffs->data_buf[i + 1];
+		databuffs->sync_buf_bckp[i] = databuffs->sync_buf_bckp[i + 1];
+		databuffs->data_buf_bckp[i] = databuffs->data_buf_bckp[i + 1];
+	}
+
+	if (found_data_frame)
+	{
+		databuffs->sync_buf[255] = bitSet(frame, &(circles.sync), 230);
+		databuffs->data_buf[255] = bitSet(frame, &(circles.data), 230);
+		databuffs->sync_buf_bckp[255] = databuffs->sync_buf[255];
+		databuffs->data_buf_bckp[255] = databuffs->data_buf[255];
+		if (databuffs->sync_buf[255])
+		{
+			cvPutText(frame, "Sync bit is enabled.", cvPoint(30, 60),
+				&(opencv_vars.main_font), cvScalar(255, 0, 0, 0));
+
+			if (databuffs->data_buf[255])
+			{
+				cvPutText(frame, "Data bit is enabled.", cvPoint(30, 90),
+					&(opencv_vars.main_font), cvScalar(255, 255, 255, 0));
+			}
+		}
+
+	}
+
+	/* drawing fancy graph */
+	for (i = 1; i < 256; i++)
+	{
+		cvDrawLine(frame, cvPoint(i * 2, 350 - databuffs->sync_buf_bckp[i - 1] / 4), cvPoint(i * 2 + 1, 350 - databuffs->sync_buf_bckp[i] / 4), cvScalar(0, 0, 255, 0), 1, 1, 0);
+		cvDrawLine(frame, cvPoint(i * 2, 450 - databuffs->data_buf_bckp[i - 1] / 4), cvPoint(i * 2 + 1, 450 - databuffs->data_buf_bckp[i] / 4), cvScalar(255, 0, 0, 0), 1, 1, 0);
+		if (i % 2 == 0) cvDrawLine(frame, cvPoint(i * 2, 400), cvPoint(i * 2 + 1, 400), cvScalar(255, 255, 255, 0), 1, 1, 0);
+	}
+}
+
+/* void to analyze captured info */
+void analyzeCapturedInfo(struct launch_params_t current_params, struct opencv_dataparsebuffs_t* databuffs)
+{
+	if (databuffs->sync_state && (databuffs->data_state == 0))
+	{
+		if (current_params.show_all_debug) puts("Only sync enabled.");
+		databuffs->sync_timeout = 10;
+		if (databuffs->is_data_transferring)
+		{
+			databuffs->recieved_bits[databuffs->recieved_bits_count] = 0;
+			databuffs->recieved_bits_count++;
+		}
+	}
+	if (!databuffs->sync_state && databuffs->data_state)
+	{
+		if (current_params.show_all_debug) puts("Only data enabled.");
+		databuffs->data_timeout = 10;
+		if (databuffs->sync_timeout > 0 && !databuffs->is_data_transferring)
+		{
+			puts("Got starting marker; transferring began");
+			databuffs->is_data_transferring = 1;
+			databuffs->recieved_bits_count = 0;
+		}
+	}
+	if (databuffs->sync_state && databuffs->data_state)
+	{
+		if (current_params.show_all_debug) puts("Both are enabled.");
+		if (databuffs->is_data_transferring)
+		{
+			databuffs->recieved_bits[databuffs->recieved_bits_count] = 1;
+			databuffs->recieved_bits_count++;
+		}
+	}
+}
+
+/* void to parse and get byte from that captured info */
+int getCapturedByte(struct launch_params_t current_params, struct opencv_dataparsebuffs_t* databuffs, uint8_t* recieved_byte)
+{
+	int found = 0;
+	size_t i;
+	printf("Got byte 0b"); /* has to be printf for no \n on the end of string */
+	databuffs->current_parity = 0;
+	databuffs->incoming_value = 0;
+	databuffs->is_data_transferring = 0;
+	for (i = 0; i < 8; i++)
+	{
+		printf("%d", databuffs->recieved_bits[i]);
+		databuffs->incoming_value = databuffs->incoming_value * 2 + databuffs->recieved_bits[i];
+		databuffs->current_parity += databuffs->recieved_bits[i];
+	}
+	printf("\n> Parity recieved is %d.\n", databuffs->recieved_bits[8]);
+	databuffs->current_parity = (databuffs->current_parity % 2 == 0 ? 0 : 1);
+	if (databuffs->current_parity == databuffs->recieved_bits[8])
+	{
+
+		printf("> Recieved byte %d == '%c'\n", databuffs->incoming_value, (char)databuffs->incoming_value);
+		puts("> Parity OK.");
+		*recieved_byte = databuffs->incoming_value;
+		found = 1;
+	}
+	else
+	{
+		puts("> Parity FAILED");
+		found = 0;
+	}
+	databuffs->recieved_bits_count = 0;
+
+	return found;
+}
+
+/* updates trackbars for current colors */
+void updateTrackbars()
+{
+	cvSetTrackbarPos("R", "settings", g_tracking_values[0]);
+	cvSetTrackbarPos("G", "settings", g_tracking_values[1]);
+	cvSetTrackbarPos("B", "settings", g_tracking_values[2]);
+}
+
+/* MAIN STUFF */
+int main(int argc, char* argv[])
+{
+	/* iterators */
+	size_t i;
+
 	/* parsing launch params */
 	struct launch_params_t current_params = getLaunchParams(argc, argv);
 	
@@ -222,6 +414,13 @@ int main(int argc, char* argv[])
 
 	/* initialising GUI & opencv stuff */
 	struct opencv_stuff_t opencv_vars = initOpenCVGui();
+
+	/* markers, sync and data circles are here in this struct, dont panic */
+	struct opencv_circles_t circles;
+	int found_data_frame = 0;
+
+	/* while all that jazz for parsing and drawing data is in this struct */
+	struct opencv_dataparsebuffs_t databuffs = initDataParsingBuffers();
 
 	/* MAIN LOOP GOES HERE */
 	while (1)
@@ -239,176 +438,52 @@ int main(int argc, char* argv[])
 		cvSmooth(opencv_vars.bw, opencv_vars.bw, CV_GAUSSIAN, 15, 0, 3, 3);
 		cvDilate(opencv_vars.bw, opencv_vars.bw, cvCreateStructuringElementEx(3, 3, 1, 1, CV_SHAPE_ELLIPSE, NULL), 2);
 
-		/* drawing all uniq circles */
-		all_circles_count = 0;
-		uniq_circles_count = 0;
+		/* capturing all uniq circles */
+		circles.all_circles_count = 0;
+		circles.uniq_circles_count = 0;
 
-		getAllCirlces(opencv_vars.bw, all_circles, &all_circles_count);
-		getUniqCircles(all_circles, all_circles_count, MIN_CIRCLE_RADIUS, uniq_circles, &uniq_circles_count);
+		getAllCirlces(opencv_vars.bw, circles.all_circles, &(circles.all_circles_count));
+		getUniqCircles(circles.all_circles, circles.all_circles_count, MIN_CIRCLE_RADIUS, circles.uniq_circles, &(circles.uniq_circles_count));
 
-		if (uniq_circles_count > 10) uniq_circles_count = 10;
+		if (circles.uniq_circles_count > MAX_UNIQ_CIRCLES) circles.uniq_circles_count = MAX_UNIQ_CIRCLES;
+		if (circles.uniq_circles_count == 3) found_data_frame = 1;
 
-		if (uniq_circles_count == 3)
-		{
-			found_data_frame = 1;
+		/* drawing circles, parsing top/left/bottom/right circles */
+		parseAndDrawCircles(opencv_vars, &circles, found_data_frame);
 
-
-			cvPutText(frame, "Data Frame recognized.", cvPoint(30, 30),
-				&(opencv_vars.main_font), cvScalar(0, 255, 0, 0));
-
-			calculateCircles(uniq_circles, &top_left, &top_right, &bottom_left, &sync, &data);
-
-			for (i = 0; i < 3; i++)
-			{
-				current_circle = uniq_circles[i];
-				centers[i].x = current_circle.x;
-				centers[i].y = current_circle.y;
-				old_circles[i] = uniq_circles[i];
-			}
-
-			/* drawing markers */
-			cvCircle(frame, cvPoint(top_left.x, top_left.y), top_left.r, cvScalar(0, 0, 255, 0), 1, 8, 0);
-			cvCircle(frame, cvPoint(top_right.x, top_right.y), top_right.r, cvScalar(0, 0, 255, 0), 1, 8, 0);
-			cvCircle(frame, cvPoint(bottom_left.x, bottom_left.y), bottom_left.r, cvScalar(0, 0, 255, 0), 1, 8, 0);
-			/* drawing sync and data */
-			cvCircle(frame, cvPoint(data.x, data.y), data.r, cvScalar(255, 255, 255, 0), 1, 8, 0);
-			cvCircle(frame, cvPoint(sync.x, sync.y), sync.r, cvScalar(255, 0, 0, 0), 1, 8, 0);
-			/*drawing beautiful lines */
-			/*cvLine(frame, centers[0], centers[1], cvScalar(0, 0, 255, 0), 1, CV_AA, 0);
-			cvLine(frame, centers[1], centers[2], cvScalar(0, 0, 255, 0), 1, CV_AA, 0);
-			cvLine(frame, centers[0], centers[2], cvScalar(0, 0, 255, 0), 1, CV_AA, 0);*/
-		}
-		else
-		{
-			cvPutText(frame, "No Data Frame recognized.", cvPoint(30, 30),
-				&(opencv_vars.main_font), cvScalar(0, 0, 255, 0));
-			if (found_data_frame)
-			{
-				/* drawing markers */
-				cvCircle(frame, cvPoint(top_left.x, top_left.y), top_left.r, cvScalar(0, 0, 128, 0), 1, 8, 0);
-				cvCircle(frame, cvPoint(top_right.x, top_right.y), top_right.r, cvScalar(0, 0, 128, 0), 1, 8, 0);
-				cvCircle(frame, cvPoint(bottom_left.x, bottom_left.y), bottom_left.r, cvScalar(0, 0, 128, 0), 1, 8, 0);
-				/* drawing sync and data */
-				cvCircle(frame, cvPoint(data.x, data.y), data.r, cvScalar(128, 128, 128, 0), 1, 8, 0);
-				cvCircle(frame, cvPoint(sync.x, sync.y), sync.r, cvScalar(128, 128, 128, 0), 1, 8, 0);
-			}
-		}
-
-		/* getting ready to draw fancy graph */
-		for (i = 0; i < 255; i++)
-		{
-			sync_buf[i] = sync_buf[i + 1];
-			data_buf[i] = data_buf[i + 1];
-			sync_buf_bckp[i] = sync_buf_bckp[i + 1];
-			data_buf_bckp[i] = data_buf_bckp[i + 1];
-		}
-
-		if (found_data_frame)
-		{
-			sync_buf[255] = bitSet(frame, &sync, 230);
-			data_buf[255] = bitSet(frame, &data, 230);
-			sync_buf_bckp[255] = sync_buf[255];
-			data_buf_bckp[255] = data_buf[255];
-			if (sync_buf[255])
-			{
-				cvPutText(frame, "Sync bit is enabled.", cvPoint(30, 60),
-					&(opencv_vars.main_font), cvScalar(255, 0, 0, 0));
-
-				if (data_buf[255])
-				{
-					cvPutText(frame, "Data bit is enabled.", cvPoint(30, 90),
-						&(opencv_vars.main_font), cvScalar(255, 255, 255, 0));
-				}
-			}
-
-		}
-
-		/* drawing fancy graph */
-		for (i = 1; i < 256; i++)
-		{
-			cvDrawLine(frame, cvPoint(i * 2, 350 - sync_buf_bckp[i - 1] / 4), cvPoint(i * 2 + 1, 350 - sync_buf_bckp[i] / 4), cvScalar(0, 0, 255, 0), 1, 1, 0);
-			cvDrawLine(frame, cvPoint(i * 2, 450 - data_buf_bckp[i - 1] / 4), cvPoint(i * 2 + 1, 450 - data_buf_bckp[i] / 4), cvScalar(255, 0, 0, 0), 1, 1, 0);
-			if (i % 2 == 0) cvDrawLine(frame, cvPoint(i * 2, 400), cvPoint(i * 2 + 1, 400), cvScalar(255, 255, 255, 0), 1, 1, 0);
-		}
+		/* capture actual data and draw it as a graph */
+		captureAndDrawFancyGraph(opencv_vars, circles, &databuffs, found_data_frame);
 
 		/* now that we have drawn graph we are free to analyze its results */
-		sync_state = getBitState(sync_buf, opencv_vars.tracking_delay);
-		data_state = getBitState(data_buf, opencv_vars.tracking_delay);
+		databuffs.sync_state = getBitState(databuffs.sync_buf, opencv_vars.tracking_delay);
+		databuffs.data_state = getBitState(databuffs.data_buf, opencv_vars.tracking_delay);
 
-		/* analysing image begins */
-		if (sync_timeout > 0) sync_timeout--;
-		if (data_timeout > 0) data_timeout--;
-
-		if (sync_state && (data_state == 0))
-		{
-			if (current_params.show_all_debug) puts("Only sync enabled.");
-			sync_timeout = 10;
-			if (is_data_transferring)
-			{
-				recieved_bits[recieved_bits_count] = 0;
-				recieved_bits_count++;
-			}
-		}
-		if (!sync_state && data_state)
-		{
-			if (current_params.show_all_debug) puts("Only data enabled.");
-			data_timeout = 10;
-			if (sync_timeout > 0 && !is_data_transferring)
-			{
-				puts("Got starting marker; transferring began");
-				is_data_transferring = 1;
-				recieved_bits_count = 0;
-			}
-		}
-		if (sync_state && data_state)
-		{
-			if (current_params.show_all_debug) puts("Both are enabled.");
-			if (is_data_transferring)
-			{
-				recieved_bits[recieved_bits_count] = 1;
-				recieved_bits_count++;
-			}
-		}
-
+		/* analyzing that graph */
+		if (databuffs.sync_timeout > 0) databuffs.sync_timeout--;
+		if (databuffs.data_timeout > 0) databuffs.data_timeout--;
+		analyzeCapturedInfo(current_params, &databuffs);
+		
 		/* byte recieved */
-		if (recieved_bits_count == 9)
+		if (databuffs.recieved_bits_count == 9)
 		{
-			printf("Got byte 0b"); /* has to be printf for no \n on the end of string */
-			current_parity = 0;
-			incoming_value = 0;
-			is_data_transferring = 0;
-			for (i = 0; i < 8; i++)
+			uint8_t recieved;
+			int result;
+			
+			result = getCapturedByte(current_params, &databuffs, &recieved);
+			/* result already printed over there, but we need to save to file if needed */
+			if (result != 0 && current_params.write_to_file)
 			{
-				printf("%d", recieved_bits[i]);
-				incoming_value = incoming_value * 2 + recieved_bits[i];
-				current_parity += recieved_bits[i];
-			}
-			printf("\n> Parity recieved is %d.\n", recieved_bits[8]);
-			current_parity = (current_parity % 2 == 0 ? 0 : 1);
-			if (current_parity == recieved_bits[8])
-			{
+				fwrite(&recieved, sizeof(uint8_t), 1, current_params.output_file);
 				if (current_params.show_all_debug) puts("> Logged to file.");
-				printf("> Recieved byte %d == '%c'\n", incoming_value, (char)incoming_value);
-				if (current_params.write_to_file)
-				{
-					puts("> Parity OK.");
-					fwrite(&incoming_value, sizeof(uint8_t), 1, current_params.output_file);
-					//fseek(output_file, sizeof(uint8_t), );
-				}
 			}
-			else
-			{
-				puts("> Parity FAILED");
-			}
-			recieved_bits_count = 0;
-			puts("");
+
 		}
 
 		/* if abort pressed */
 		if (is_abort_pressed)
 		{
 			puts("DATA TRANSFER ABORTED.");
-			recieved_bits_count = 0;
+			databuffs.recieved_bits_count = 0;
 			is_abort_pressed = 0;
 		}
 

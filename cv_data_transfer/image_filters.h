@@ -7,9 +7,6 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#define MAX_CIRCLES 30
-#define MAX_UNIQ_CIRCLES 10
-
 /* used for image filters */
 struct Pixel_t
 {
