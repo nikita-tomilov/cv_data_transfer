@@ -19,6 +19,7 @@ IplImage* frame;
 /* flag that transfer aborted */
 int is_abort_pressed = 0;
 
+
 /* used to get bit state in a graph */
 int getBitState(int* array, size_t delta)
 {
@@ -52,6 +53,124 @@ void mouseCallback(int mevent, int x, int y, int flags, void* userdata)
 	}
 }
 
+
+/* launch params structure and special function to parse that stuff */
+struct launch_params_t
+{
+
+	/* program settings */
+	int show_all_debug;
+	int write_to_file;
+
+	/* file IO */
+	FILE* output_file;
+
+};
+struct launch_params_t getLaunchParams(int argc, char* argv[])
+{
+	size_t i;
+	struct launch_params_t current;
+
+	current.output_file = NULL;
+	current.show_all_debug = 0;
+	current.write_to_file = 0;
+
+	/* WAIT! Let's check program launch params */
+	for (i = 0; i < argc; i++)
+	{
+		/* puts(">> %s", argv[i]); */
+		if (strcmp(argv[i], "-h") == 0)
+		{
+			puts("cv_data_transfer, PC side\
+				 https://github.com/Programmer74/cv_data_transfer \
+				Additional parameters: \
+				-h Show this help \
+				-o <filename> - Write recieved bytes to file \
+				-v Show all logs");
+			exit(0);
+		}
+		if (strcmp(argv[i], "-v") == 0) current.show_all_debug = 1;
+		if (strcmp(argv[i], "-o") == 0)
+		{
+			if (i + 1 == argc)
+			{
+				puts("No filename specified.");
+				exit(0);
+			}
+			current.output_file = fopen(argv[i + 1], "wb");
+			if (current.output_file == NULL)
+			{
+				printf("Cannot open file %s.\n", argv[i + 1]);
+				exit(0);
+			}
+			current.write_to_file = 1;
+			printf("Enabled data output to file %s.\n", argv[i + 1]);
+		}
+	}
+	return current;
+}
+
+/* opencv stuff structure and opencv gui initialising*/
+struct opencv_stuff_t
+{
+	/* font for drawing */
+	CvFont main_font;
+
+	/* time to track circles in "ticks"
+	one tick = one frame being captured */
+	int tracking_delay;
+
+	/* images */
+	IplImage* dst;
+	IplImage* bw;
+	/* capture device */
+	CvCapture* capture;
+};
+struct opencv_stuff_t initOpenCVGui()
+{
+	struct opencv_stuff_t current;
+	/* UI AND OPENCV */
+	/* initialising camera */
+	current.capture = cvCreateCameraCapture(CV_CAP_ANY);
+	assert(current.capture);
+
+	current.tracking_delay = 3; /* 3 frames */
+
+	/* initialising window */
+	cvNamedWindow("settings", CV_WINDOW_NORMAL);
+	cvResizeWindow("settings", 400, 300);
+	cvNamedWindow("filtered", CV_WINDOW_AUTOSIZE);
+	cvNamedWindow("capture", CV_WINDOW_AUTOSIZE);
+	cvSetMouseCallback("capture", mouseCallback, NULL);
+
+	/* initialising images */
+	frame = cvQueryFrame(current.capture); /* webcam image */
+	current.dst = cvCreateImage(cvSize(frame->width, frame->height), frame->depth, frame->nChannels);  /*destination for all magic */
+	current.bw = cvCreateImage(cvSize(frame->width, frame->height), IPL_DEPTH_8U, 1); /* bw image used for finding circles */
+
+	/* initialising font for printing text */
+	cvInitFont(&(current.main_font), CV_FONT_HERSHEY_COMPLEX_SMALL, 1.0f, 1.0f, 0, 1, CV_AA);
+
+	/* adjusting trackbars */
+	cvCreateTrackbar("R", "settings", g_tracking_values, 255, NULL);
+	cvCreateTrackbar("G", "settings", g_tracking_values + 1, 255, NULL);
+	cvCreateTrackbar("B", "settings", g_tracking_values + 2, 255, NULL);
+	cvCreateTrackbar("Radius R", "settings", g_tracking_values + 3, 255, NULL);
+	cvCreateTrackbar("Radius G", "settings", g_tracking_values + 4, 255, NULL);
+	cvCreateTrackbar("Radius B", "settings", g_tracking_values + 5, 255, NULL);
+	cvCreateTrackbar("Tracking delay", "settings", &(current.tracking_delay), 10, NULL);
+
+	return current;
+}
+
+/* updates trackbars for current colors */
+void updateTrackbars()
+{
+	cvSetTrackbarPos("R", "settings", g_tracking_values[0]);
+	cvSetTrackbarPos("G", "settings", g_tracking_values[1]);
+	cvSetTrackbarPos("B", "settings", g_tracking_values[2]);
+}
+
 /* */
 int main(int argc, char* argv[])
 {
@@ -60,19 +179,7 @@ int main(int argc, char* argv[])
 	/* iterators */
 	size_t i;
 
-	/* program settings */
-	int show_all_debug = 0;
-	int write_to_file = 0;
 
-	/* file IO */
-	FILE* output_file;
-	
-
-	/* time to track circles in "ticks"
-	one tick = one frame being captured */
-	int tracking_delay = 3;
-	
-	
 	/* initialising markers, sync and data circles */
 	struct Circle_t old_circles[3];
 	int found_data_frame = 0;
@@ -107,95 +214,36 @@ int main(int argc, char* argv[])
 	int is_data_transferring = 0;
 	uint8_t incoming_value = 0;
 	int current_parity = 0;
-
-	/* WAIT! Let's check program launch params */
-	for (i = 0; i < argc; i++)
-	{
-		/* puts(">> %s", argv[i]); */
-		if (strcmp(argv[i], "-h") == 0) 
-		{
-			puts("cv_data_transfer, PC side\
-			https://github.com/Programmer74/cv_data_transfer \
-			Additional parameters: \
-			 -h Show this help \
-			 -o <filename> - Write recieved bytes to file \
-			 -v Show all logs");
-			return 0;
-		}
-		if (strcmp(argv[i], "-v") == 0) show_all_debug = 1;
-		if (strcmp(argv[i], "-o") == 0)
-		{
-			if (i + 1 == argc)
-			{
-				puts("No filename specified.");
-				return 0;
-			}
-			output_file = fopen(argv[i + 1], "wb");
-			if (output_file == NULL)
-			{
-				printf("Cannot open file %s.\n", argv[i + 1]);
-				return 0;
-			}
-			write_to_file = 1;
-			printf("Enabled data output to file %s.\n", argv[i + 1]);
-		}
-	}
-
+	
+	/* parsing launch params */
+	struct launch_params_t current_params = getLaunchParams(argc, argv);
+	
 	puts("cv_data_transfer successfully launched.");
 
-	/* UI AND OPENCV */
-	/* initialising camera */
-	CvCapture* capture = cvCreateCameraCapture(CV_CAP_ANY);
-	assert(capture);
-
-	/* initialising window */
-	cvNamedWindow("settings", CV_WINDOW_NORMAL);
-	cvResizeWindow("settings", 400, 300);
-	cvNamedWindow("filtered", CV_WINDOW_AUTOSIZE);
-	cvNamedWindow("capture", CV_WINDOW_AUTOSIZE);
-	cvSetMouseCallback("capture", mouseCallback, NULL);
-
-	/* initialising images */
-	frame = cvQueryFrame(capture); /* webcam image */
-	IplImage* dst = cvCreateImage(cvSize(frame->width, frame->height), frame->depth, frame->nChannels);  /*destination for all magic */
-	IplImage* bw = cvCreateImage(cvSize(frame->width, frame->height), IPL_DEPTH_8U, 1); /* bw image used for finding circles */
-
-	/* initialising font for printing text */
-	CvFont main_font;
-	cvInitFont(&main_font, CV_FONT_HERSHEY_COMPLEX_SMALL, 1.0f, 1.0f, 0, 1, CV_AA);
-
-	/* adjusting trackbars */
-	cvCreateTrackbar("R", "settings", g_tracking_values, 255, NULL);
-	cvCreateTrackbar("G", "settings", g_tracking_values + 1, 255, NULL);
-	cvCreateTrackbar("B", "settings", g_tracking_values + 2, 255, NULL);
-	cvCreateTrackbar("Radius R", "settings", g_tracking_values + 3, 255, NULL);
-	cvCreateTrackbar("Radius G", "settings", g_tracking_values + 4, 255, NULL);
-	cvCreateTrackbar("Radius B", "settings", g_tracking_values + 5, 255, NULL);
-	cvCreateTrackbar("Tracking delay", "settings", &tracking_delay, 10, NULL);
+	/* initialising GUI & opencv stuff */
+	struct opencv_stuff_t opencv_vars = initOpenCVGui();
 
 	/* MAIN LOOP GOES HERE */
 	while (1)
 	{
-		cvSetTrackbarPos("R", "settings", g_tracking_values[0]);
-		cvSetTrackbarPos("G", "settings", g_tracking_values[1]);
-		cvSetTrackbarPos("B", "settings", g_tracking_values[2]);
+		updateTrackbars();
 
 		/* retrieving image */
-		frame = cvQueryFrame(capture);
-		dst = cvClone(frame);
-		
+		frame = cvQueryFrame(opencv_vars.capture);
+		opencv_vars.dst = cvClone(frame);
+
 		/* filtering by required params*/
-		applyFuncOnImage(frame, dst, 4, g_tracking_values, calculateTresholdByRGBValue);
+		applyFuncOnImage(frame, opencv_vars.dst, 4, g_tracking_values, calculateTresholdByRGBValue);
 		/* creating and adjusting mask */
-		cvCvtColor(dst, bw, CV_BGR2GRAY);
-		cvSmooth(bw, bw, CV_GAUSSIAN, 15, 0, 3, 3);
-		cvDilate(bw, bw, cvCreateStructuringElementEx(3, 3, 1, 1, CV_SHAPE_ELLIPSE, NULL), 2);
-		
+		cvCvtColor(opencv_vars.dst, opencv_vars.bw, CV_BGR2GRAY);
+		cvSmooth(opencv_vars.bw, opencv_vars.bw, CV_GAUSSIAN, 15, 0, 3, 3);
+		cvDilate(opencv_vars.bw, opencv_vars.bw, cvCreateStructuringElementEx(3, 3, 1, 1, CV_SHAPE_ELLIPSE, NULL), 2);
+
 		/* drawing all uniq circles */
 		all_circles_count = 0;
 		uniq_circles_count = 0;
-		
-		getAllCirlces(bw, all_circles, &all_circles_count);
+
+		getAllCirlces(opencv_vars.bw, all_circles, &all_circles_count);
 		getUniqCircles(all_circles, all_circles_count, MIN_CIRCLE_RADIUS, uniq_circles, &uniq_circles_count);
 
 		if (uniq_circles_count > 10) uniq_circles_count = 10;
@@ -204,9 +252,9 @@ int main(int argc, char* argv[])
 		{
 			found_data_frame = 1;
 
-			
+
 			cvPutText(frame, "Data Frame recognized.", cvPoint(30, 30),
-				&main_font, cvScalar(0, 255, 0, 0));
+				&(opencv_vars.main_font), cvScalar(0, 255, 0, 0));
 
 			calculateCircles(uniq_circles, &top_left, &top_right, &bottom_left, &sync, &data);
 
@@ -233,7 +281,7 @@ int main(int argc, char* argv[])
 		else
 		{
 			cvPutText(frame, "No Data Frame recognized.", cvPoint(30, 30),
-				&main_font, cvScalar(0, 0,  255, 0));
+				&(opencv_vars.main_font), cvScalar(0, 0, 255, 0));
 			if (found_data_frame)
 			{
 				/* drawing markers */
@@ -264,15 +312,15 @@ int main(int argc, char* argv[])
 			if (sync_buf[255])
 			{
 				cvPutText(frame, "Sync bit is enabled.", cvPoint(30, 60),
-					&main_font, cvScalar(255, 0, 0, 0));
-				
+					&(opencv_vars.main_font), cvScalar(255, 0, 0, 0));
+
 				if (data_buf[255])
 				{
 					cvPutText(frame, "Data bit is enabled.", cvPoint(30, 90),
-						&main_font, cvScalar(255, 255, 255, 0));
+						&(opencv_vars.main_font), cvScalar(255, 255, 255, 0));
 				}
 			}
-		
+
 		}
 
 		/* drawing fancy graph */
@@ -284,8 +332,8 @@ int main(int argc, char* argv[])
 		}
 
 		/* now that we have drawn graph we are free to analyze its results */
-		sync_state = getBitState(sync_buf, tracking_delay);
-		data_state = getBitState(data_buf, tracking_delay);
+		sync_state = getBitState(sync_buf, opencv_vars.tracking_delay);
+		data_state = getBitState(data_buf, opencv_vars.tracking_delay);
 
 		/* analysing image begins */
 		if (sync_timeout > 0) sync_timeout--;
@@ -293,7 +341,7 @@ int main(int argc, char* argv[])
 
 		if (sync_state && (data_state == 0))
 		{
-			if (show_all_debug) puts("Only sync enabled."); 
+			if (current_params.show_all_debug) puts("Only sync enabled.");
 			sync_timeout = 10;
 			if (is_data_transferring)
 			{
@@ -303,7 +351,7 @@ int main(int argc, char* argv[])
 		}
 		if (!sync_state && data_state)
 		{
-			if (show_all_debug) puts("Only data enabled.");
+			if (current_params.show_all_debug) puts("Only data enabled.");
 			data_timeout = 10;
 			if (sync_timeout > 0 && !is_data_transferring)
 			{
@@ -314,7 +362,7 @@ int main(int argc, char* argv[])
 		}
 		if (sync_state && data_state)
 		{
-			if (show_all_debug) puts("Both are enabled.");
+			if (current_params.show_all_debug) puts("Both are enabled.");
 			if (is_data_transferring)
 			{
 				recieved_bits[recieved_bits_count] = 1;
@@ -339,12 +387,12 @@ int main(int argc, char* argv[])
 			current_parity = (current_parity % 2 == 0 ? 0 : 1);
 			if (current_parity == recieved_bits[8])
 			{
-				if (show_all_debug) puts("> Logged to file.");
+				if (current_params.show_all_debug) puts("> Logged to file.");
 				printf("> Recieved byte %d == '%c'\n", incoming_value, (char)incoming_value);
-				if (write_to_file)
+				if (current_params.write_to_file)
 				{
 					puts("> Parity OK.");
-					fwrite(&incoming_value, sizeof(uint8_t), 1, output_file);
+					fwrite(&incoming_value, sizeof(uint8_t), 1, current_params.output_file);
 					//fseek(output_file, sizeof(uint8_t), );
 				}
 			}
@@ -366,28 +414,27 @@ int main(int argc, char* argv[])
 
 		/* showing image */
 		cvShowImage("capture", frame);
-		cvShowImage("filtered", bw);
+		cvShowImage("filtered", opencv_vars.bw);
 
 		char c = cvWaitKey(33);
 		if (c == 27) { /* esc key pressed */
 			break;
-			
+
 		}
-		
+
 		/* freeing up */
-		cvReleaseImage(&dst);
+		cvReleaseImage(&(opencv_vars.dst));
 		/* should NOT release bw and frame */
-		
+
 	}
 	puts("Closed.");
-	
-	cvReleaseCapture(&capture);
-	if (write_to_file)
+
+	cvReleaseCapture(&(opencv_vars.capture));
+	if (current_params.write_to_file)
 	{
 		puts("File closing.");
-		fclose(output_file);
+		fclose(current_params.output_file);
 	}
 	puts("Bye.");
 	return 0;
 }
-
