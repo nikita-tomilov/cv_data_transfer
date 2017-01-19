@@ -71,11 +71,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="getopt.c" />
     <ClCompile Include="image_circles.c" />
     <ClCompile Include="image_filters.c" />
     <ClCompile Include="main.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="getopt.h" />
     <ClInclude Include="image_circles.h" />
     <ClInclude Include="image_filters.h" />
   </ItemGroup>

@@ -6,6 +6,7 @@
 
 #include "image_circles.h"
 #include "image_filters.h"
+#include "getopt.h"
 
 #define MIN_CIRCLE_RADIUS 15
 
@@ -70,45 +71,46 @@ struct launch_params_t getLaunchParams(int argc, char* argv[])
 {
 	size_t i;
 	struct launch_params_t current;
+	int optres;
 
 	current.output_file = NULL;
 	current.show_all_debug = 0;
 	current.write_to_file = 0;
 
-	/* WAIT! Let's check program launch params */
-	for (i = 0; i < argc; i++)
+	opterr = 0;
+	while ((optres = getopt(argc, argv, "hvo:")) != -1)
 	{
-		/* puts(">> %s", argv[i]); */
-		if (strcmp(argv[i], "-h") == 0)
+		switch (optres)
 		{
-			puts("\n\
-				 cv_data_transfer, PC side\n\
-				 https://github.com/Programmer74/cv_data_transfer \n\
-				 Additional parameters: \n\
-				 -h Show this help \n\
-				 -o <filename> - Write recieved bytes to file \n\
-				 -v Show all logs\n");
-			exit(0);
-		}
-		if (strcmp(argv[i], "-v") == 0) current.show_all_debug = 1;
-		if (strcmp(argv[i], "-o") == 0)
-		{
-			if (i + 1 == argc)
-			{
-				puts("No filename specified.");
+			case 'h':
+				puts("\n\
+					 cv_data_transfer, PC side\n\
+					 https://github.com/Programmer74/cv_data_transfer \n\
+					 Additional parameters: \n\
+					 -h Show this help \n\
+					 -o <filename> - Write recieved bytes to file \n\
+					 -v Show all logs\n");
 				exit(0);
-			}
-			current.output_file = fopen(argv[i + 1], "wb");
-			if (current.output_file == NULL)
-			{
-				printf("Cannot open file %s.\n", argv[i + 1]);
-				exit(0);
-			}
-			current.write_to_file = 1;
-			printf("Enabled data output to file %s.\n", argv[i + 1]);
-		}
-	}
+				break;
+			case 'v': 
+				current.show_all_debug = 1; 
+				break;
+			case 'o': 
+				current.output_file = fopen(optarg, "wb");
+				if (current.output_file == NULL)
+				{
+					printf("Cannot open file %s.\n", optarg);
+					exit(0);
+				}
+				current.write_to_file = 1;
+				printf("Enabled data output to file %s.\n", optarg);
+				break;
+
+			case '?': printf("Wrong parameter specified!\n"); exit(0);
+		};
+	};
 	return current;
+
 }
 
 /* opencv stuff structure and opencv gui initialising*/
