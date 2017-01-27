@@ -10,7 +10,7 @@
 
 #define MIN_CIRCLE_RADIUS 15
 
-/* used to treshold on blue tracking points */
+/* used to threshold on blue tracking points */
 /* b, g, r, radius */
 int g_tracking_values[] = { 0, 0, 0, 5, 5, 5 };
 
@@ -69,7 +69,6 @@ struct launch_params_t
 };
 struct launch_params_t getLaunchParams(int argc, char* argv[])
 {
-	size_t i;
 	struct launch_params_t current;
 	int optres;
 
@@ -88,10 +87,9 @@ struct launch_params_t getLaunchParams(int argc, char* argv[])
 					 https://github.com/Programmer74/cv_data_transfer \n\
 					 Additional parameters: \n\
 					 -h Show this help \n\
-					 -o <filename> - Write recieved bytes to file \n\
+					 -o <filename> - Write received bytes to file \n\
 					 -v Show all logs\n");
 				exit(0);
-				break;
 			case 'v': 
 				current.show_all_debug = 1; 
 				break;
@@ -113,7 +111,7 @@ struct launch_params_t getLaunchParams(int argc, char* argv[])
 
 }
 
-/* opencv stuff structure and opencv gui initialising*/
+/* opencv stuff structure and opencv gui initialising */
 struct opencv_stuff_t
 {
 	/* font for drawing */
@@ -152,7 +150,7 @@ struct opencv_stuff_t initOpenCVGui()
 	current.bw = cvCreateImage(cvSize(frame->width, frame->height), IPL_DEPTH_8U, 1); /* bw image used for finding circles */
 
 	/* initialising font for printing text */
-	cvInitFont(&(current.main_font), CV_FONT_HERSHEY_COMPLEX_SMALL, 1.0f, 1.0f, 0, 1, CV_AA);
+	cvInitFont(&(current.main_font), CV_FONT_HERSHEY_COMPLEX_SMALL, 1.0, 1.0, 0, 1, CV_AA);
 
 	/* adjusting trackbars */
 	cvCreateTrackbar("R", "settings", g_tracking_values, 255, NULL);
@@ -187,9 +185,6 @@ void parseAndDrawCircles(struct opencv_stuff_t opencv_vars, struct opencv_circle
 	size_t i;
 	if (circles->uniq_circles_count == 3)
 	{
-
-
-
 		cvPutText(frame, "Data Frame recognized.", cvPoint(30, 30),
 			&(opencv_vars.main_font), cvScalar(0, 255, 0, 0));
 
@@ -198,18 +193,18 @@ void parseAndDrawCircles(struct opencv_stuff_t opencv_vars, struct opencv_circle
 		for (i = 0; i < 3; i++)
 		{
 			circles->current_circle = circles->uniq_circles[i];
-			circles->centers[i].x = circles->current_circle.x;
-			circles->centers[i].y = circles->current_circle.y;
+			circles->centers[i].x = (int) circles->current_circle.x;
+			circles->centers[i].y = (int) circles->current_circle.y;
 			circles->old_circles[i] = circles->uniq_circles[i];
 		}
 
 		/* drawing markers */
-		cvCircle(frame, cvPoint(circles->top_left.x, circles->top_left.y), circles->top_left.r, cvScalar(0, 0, 255, 0), 1, 8, 0);
-		cvCircle(frame, cvPoint(circles->top_right.x, circles->top_right.y), circles->top_right.r, cvScalar(0, 0, 255, 0), 1, 8, 0);
-		cvCircle(frame, cvPoint(circles->bottom_left.x, circles->bottom_left.y), circles->bottom_left.r, cvScalar(0, 0, 255, 0), 1, 8, 0);
+		cvCircle(frame, cvPoint((int)circles->top_left.x, (int)circles->top_left.y), (int)circles->top_left.r, cvScalar(0, 0, 255, 0), 1, 8, 0);
+		cvCircle(frame, cvPoint((int)circles->top_right.x, (int)circles->top_right.y), (int)circles->top_right.r, cvScalar(0, 0, 255, 0), 1, 8, 0);
+		cvCircle(frame, cvPoint((int)circles->bottom_left.x, (int)circles->bottom_left.y), (int)circles->bottom_left.r, cvScalar(0, 0, 255, 0), 1, 8, 0);
 		/* drawing sync and data */
-		cvCircle(frame, cvPoint(circles->data.x, circles->data.y), circles->data.r, cvScalar(255, 255, 255, 0), 1, 8, 0);
-		cvCircle(frame, cvPoint(circles->sync.x, circles->sync.y), circles->sync.r, cvScalar(255, 0, 0, 0), 1, 8, 0);
+		cvCircle(frame, cvPoint((int)circles->data.x, (int)circles->data.y), (int)circles->data.r, cvScalar(255, 255, 255, 0), 1, 8, 0);
+		cvCircle(frame, cvPoint((int)circles->sync.x, (int)circles->sync.y), (int)circles->sync.r, cvScalar(255, 0, 0, 0), 1, 8, 0);
 		/*drawing beautiful lines */
 		/*cvLine(frame, centers[0], centers[1], cvScalar(0, 0, 255, 0), 1, CV_AA, 0);
 		cvLine(frame, centers[1], centers[2], cvScalar(0, 0, 255, 0), 1, CV_AA, 0);
@@ -222,12 +217,12 @@ void parseAndDrawCircles(struct opencv_stuff_t opencv_vars, struct opencv_circle
 		if (found_data_frame)
 		{
 			/* drawing markers */
-			cvCircle(frame, cvPoint(circles->top_left.x, circles->top_left.y), circles->top_left.r, cvScalar(0, 0, 128, 0), 1, 8, 0);
-			cvCircle(frame, cvPoint(circles->top_right.x, circles->top_right.y), circles->top_right.r, cvScalar(0, 0, 128, 0), 1, 8, 0);
-			cvCircle(frame, cvPoint(circles->bottom_left.x, circles->bottom_left.y), circles->bottom_left.r, cvScalar(0, 0, 128, 0), 1, 8, 0);
+			cvCircle(frame, cvPoint((int)circles->top_left.x, (int)circles->top_left.y), (int)circles->top_left.r, cvScalar(0, 0, 128, 0), 1, 8, 0);
+			cvCircle(frame, cvPoint((int)circles->top_right.x, (int)circles->top_right.y), (int)circles->top_right.r, cvScalar(0, 0, 128, 0), 1, 8, 0);
+			cvCircle(frame, cvPoint((int)circles->bottom_left.x, (int)circles->bottom_left.y), (int)circles->bottom_left.r, cvScalar(0, 0, 128, 0), 1, 8, 0);
 			/* drawing sync and data */
-			cvCircle(frame, cvPoint(circles->data.x, circles->data.y), circles->data.r, cvScalar(128, 128, 128, 0), 1, 8, 0);
-			cvCircle(frame, cvPoint(circles->sync.x, circles->sync.y), circles->sync.r, cvScalar(128, 128, 128, 0), 1, 8, 0);
+			cvCircle(frame, cvPoint((int)circles->data.x, (int)circles->data.y), (int)circles->data.r, cvScalar(128, 128, 128, 0), 1, 8, 0);
+			cvCircle(frame, cvPoint((int)circles->sync.x, (int)circles->sync.y), (int)circles->sync.r, cvScalar(128, 128, 128, 0), 1, 8, 0);
 		}
 	}
 
@@ -249,7 +244,7 @@ struct opencv_dataparsebuffs_t
 	int sync_timeout;
 	int data_timeout;
 
-	/* recieved data parsing */
+	/* received data parsing */
 	int* recieved_bits;
 	int recieved_bits_count;
 	int is_data_transferring;
@@ -272,7 +267,7 @@ struct opencv_dataparsebuffs_t initDataParsingBuffers()
 	current.sync_timeout = 0;
 	current.data_timeout = 0;
 
-	/* recieved data parsing */
+	/* received data parsing */
 	current.recieved_bits = (int*)calloc(9, sizeof(int)); /* 8 + parity */
 	current.recieved_bits_count = 0;
 	current.is_data_transferring = 0;
@@ -319,6 +314,7 @@ void captureAndDrawFancyGraph(struct opencv_stuff_t opencv_vars, struct opencv_c
 	/* drawing fancy graph */
 	for (i = 1; i < 256; i++)
 	{
+        /* WARNING: implicit conversion loses integer precision: 'unsigned long' to 'int' */
 		cvDrawLine(frame, cvPoint(i * 2, 350 - databuffs->sync_buf_bckp[i - 1] / 4), cvPoint(i * 2 + 1, 350 - databuffs->sync_buf_bckp[i] / 4), cvScalar(0, 0, 255, 0), 1, 1, 0);
 		cvDrawLine(frame, cvPoint(i * 2, 450 - databuffs->data_buf_bckp[i - 1] / 4), cvPoint(i * 2 + 1, 450 - databuffs->data_buf_bckp[i] / 4), cvScalar(255, 0, 0, 0), 1, 1, 0);
 		if (i % 2 == 0) cvDrawLine(frame, cvPoint(i * 2, 400), cvPoint(i * 2 + 1, 400), cvScalar(255, 255, 255, 0), 1, 1, 0);
@@ -372,15 +368,16 @@ int getCapturedByte(struct launch_params_t current_params, struct opencv_datapar
 	for (i = 0; i < 8; i++)
 	{
 		printf("%d", databuffs->recieved_bits[i]);
+        /* WARNING: implicit conversion loses integer precision: 'int' to 'uint8_t' (aka 'unsigned char') */
 		databuffs->incoming_value = databuffs->incoming_value * 2 + databuffs->recieved_bits[i];
 		databuffs->current_parity += databuffs->recieved_bits[i];
 	}
-	printf("\n> Parity recieved is %d.\n", databuffs->recieved_bits[8]);
+	printf("\n> Parity received is %d.\n", databuffs->recieved_bits[8]);
 	databuffs->current_parity = (databuffs->current_parity % 2 == 0 ? 0 : 1);
 	if (databuffs->current_parity == databuffs->recieved_bits[8])
 	{
 
-		printf("> Recieved byte %d == '%c'\n", databuffs->incoming_value, (char)databuffs->incoming_value);
+		printf("> Received byte %d == '%c'\n", databuffs->incoming_value, (char)databuffs->incoming_value);
 		puts("> Parity OK.");
 		*recieved_byte = databuffs->incoming_value;
 		found = 1;
@@ -406,9 +403,6 @@ void updateTrackbars()
 /* MAIN STUFF */
 int main(int argc, char* argv[])
 {
-	/* iterators */
-	size_t i;
-
 	/* parsing launch params */
 	struct launch_params_t current_params = getLaunchParams(argc, argv);
 	
@@ -433,7 +427,7 @@ int main(int argc, char* argv[])
 		frame = cvQueryFrame(opencv_vars.capture);
 		opencv_vars.dst = cvClone(frame);
 
-		/* filtering by required params*/
+		/* filtering by required params */
 		applyFuncOnImage(frame, opencv_vars.dst, 4, g_tracking_values, calculateTresholdByRGBValue);
 		/* creating and adjusting mask */
 		cvCvtColor(opencv_vars.dst, opencv_vars.bw, CV_BGR2GRAY);
@@ -457,6 +451,7 @@ int main(int argc, char* argv[])
 		captureAndDrawFancyGraph(opencv_vars, circles, &databuffs, found_data_frame);
 
 		/* now that we have drawn graph we are free to analyze its results */
+        /* WARNING: implicit conversion changes signedness: 'int' to 'size_t' (aka 'unsigned long') */
 		databuffs.sync_state = getBitState(databuffs.sync_buf, opencv_vars.tracking_delay);
 		databuffs.data_state = getBitState(databuffs.data_buf, opencv_vars.tracking_delay);
 
@@ -465,7 +460,7 @@ int main(int argc, char* argv[])
 		if (databuffs.data_timeout > 0) databuffs.data_timeout--;
 		analyzeCapturedInfo(current_params, &databuffs);
 		
-		/* byte recieved */
+		/* byte received */
 		if (databuffs.recieved_bits_count == 9)
 		{
 			uint8_t recieved;
@@ -493,7 +488,7 @@ int main(int argc, char* argv[])
 		cvShowImage("capture", frame);
 		cvShowImage("filtered", opencv_vars.bw);
 
-		char c = cvWaitKey(33);
+		int c = cvWaitKey(33);
 		if (c == 27) { /* esc key pressed */
 			break;
 

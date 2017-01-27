@@ -18,7 +18,7 @@ static int square(int x)
 /* returns array of circles and stores the amount of them in n */
 void getAllCirlces(IplImage* img, struct Circle_t* buf, size_t* n)
 {
-	size_t i;
+	int i;
 	CvSeq* hc_out_seq;
 	CvMemStorage* hc_out_mem = cvCreateMemStorage(0);
 	*n = 0;
@@ -33,7 +33,7 @@ void getAllCirlces(IplImage* img, struct Circle_t* buf, size_t* n)
 	union CustomData val;
 	cvStartReadSeq(hc_out_seq, &reader, 0);
 
-	*n = hc_out_seq->total;
+	*n = (size_t) hc_out_seq->total;
 
 	/* struct Circle_t* tmp_array = (struct Circle_t*)malloc(*n * sizeof(struct Circle_t));  //TODO: NO MALLOC */
 	struct Circle_t tmp_entry;
@@ -67,7 +67,7 @@ void getUniqCircles(struct Circle_t* inputArray, size_t inputAmount, int minRadi
 		f = 1;
 		for (j = 0; (j < n) && (j < MAX_UNIQ_CIRCLES); j++)
 		{
-			if (square(inputArray[i].x - outputArray[j].x) + square(inputArray[i].y - outputArray[j].y) < minRadius * minRadius) f = 0;
+			if ((square((int) (inputArray[i].x - outputArray[j].x))) + square((int) (inputArray[i].y - outputArray[j].y)) < minRadius * minRadius) f = 0;
 
 		}
 		if (f)
@@ -117,7 +117,7 @@ int bitSet(IplImage* image, struct Circle_t* circle, float treshold)
 {
 	struct Pixel_t px;
 	float curval;
-	px = getPixel(image, circle->x, circle->y);
+	px = getPixel(image, (int) circle->x, (int) circle->y);
 	curval = (px.r + px.g + px.b) / 3.0f;
 	if (curval >= treshold) return (int)curval;
 	return 0;

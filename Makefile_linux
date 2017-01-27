@@ -1,4 +1,5 @@
 CC              := gcc
+CFLAGS          := -Wall -Wextra -pedantic
 LIBRARIES       := `pkg-config opencv --libs --cflags` -ldl
 MODULES			:= main image_filters image_circles
 SOURCES_PATH	:= ./cv_data_transfer
@@ -12,3 +13,6 @@ all: main
 main: 
 	$(CC) $(CFLAGS) -c $(SOURCES) `pkg-config opencv --libs --cflags`
 	$(CC) $(LIBRARIES) -o $(EXECUTABLE) $(OBJECTS) $(INCLUDE_LIBRARIES)
+
+clean:
+	rm *.o
