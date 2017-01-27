@@ -4,7 +4,7 @@ Data transfer using Arduino and Webcam.
 - Arduino Uno/Leonardo/whatsoever with coloured TFT screen
 - Web camera
 - 2 PCs/Laptops/whatsoever
-- OpenCV 2.4.13 on “reciever” PC
+- OpenCV 2.4.13 on “receiver” PC
 
 Other versions MAY WORK OR MAY NOT.
 
@@ -13,10 +13,10 @@ Other versions MAY WORK OR MAY NOT.
 2. Connect it to “sender” PC
 3. Open up whatever serial communication software you like (PuTTY etc.)
 4. Make sure “sender” device actually sends something - the pattern on the screen changes
-5. Compile and run “reciever” code on “reciever” PC
-6. Point your “sender” device onto “reciever”’s webcam
+5. Compile and run “receiver” code on “receiver” PC
+6. Point your “sender” device onto “receiver”’s webcam
 7. Adjust sliders so PC can recognise markers on the device
-8. Start sending bytes from “sender” and watch them appear on “reciever”
+8. Start sending bytes from “sender” and watch them appear on “receiver”
 
 “Sender” device should look something like this:
 
@@ -39,7 +39,7 @@ Windows without VS2013, Linux, MacOS, other Unix-based OS
 
 ## Command-line parameters
 - -h for help
-- -o <output> for writing recieved bytes to file
+- -o <output> for writing received bytes to file
 - -v for full logs
 
 ## Coming soon

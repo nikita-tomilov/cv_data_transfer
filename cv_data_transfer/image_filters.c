@@ -39,6 +39,10 @@ static int mmin(int a, int b)
 {
 	return (a < b ? a : b);
 }
+static uint8_t u8min(uint8_t a, uint8_t b)
+{
+	return (a < b ? a : b);
+}
 
 /* used to calculate erode pixel in image */
 /* uses no arguments */
@@ -54,9 +58,9 @@ struct Pixel_t calculateErodePixel(IplImage* img, int x, int y, int argc, int* a
 		for (j = mmax(x - radius, 0); j <= mmin(x + radius, img->width - 1); j++)
 		{
 			cur = getPixel(img, j, i);
-			tmp.r = mmin(tmp.r, cur.r);
-			tmp.g = mmin(tmp.g, cur.g);
-			tmp.b = mmin(tmp.b, cur.b);
+			tmp.r = u8min(tmp.r, cur.r);
+			tmp.g = u8min(tmp.g, cur.g);
+			tmp.b = u8min(tmp.b, cur.b);
 		}
 	return tmp;
 }
@@ -66,7 +70,7 @@ G = L
 R = S
 */
 
-/* used to make treshold on blue channel (blue or hue) */
+/* used to make threshold on blue channel (blue or hue) */
 /* uses two arguments - lower (0) and upper (1) bound */
 struct Pixel_t calculateBTresholdPixel(IplImage* img, int x, int y, int argc, int* argv)
 {
@@ -78,7 +82,7 @@ struct Pixel_t calculateBTresholdPixel(IplImage* img, int x, int y, int argc, in
 	return cur;
 }
 
-/* used to make treshold on RGB in required radius */
+/* used to make threshold on RGB in required radius */
 /* uses four arguments - r, g, b and radius in which point still counts */
 struct Pixel_t calculateTresholdByRGBValue(IplImage* img, int x, int y, int argc, int* argv)
 {
@@ -100,12 +104,13 @@ struct Pixel_t calculateTresholdByRGBValue(IplImage* img, int x, int y, int argc
 struct Pixel_t calculateSaturationPixel(IplImage* img, int x, int y, int argc, int* argv)
 {
 	struct Pixel_t cur = getPixel(img, x, y);
-	cur.r = mmin((int)(cur.r * 1.0 * argv[0] / 100), 255);
+    /* WARNING: implicit conversion loses integer precision: 'int' to 'uint8_t' (aka 'unsigned char') */
+	cur.r = mmin((cur.r * 1.0 * argv[0] / 100), 255);
 	return cur;
 }
 
 /* applies function on whole image */
-/* recieves pointer on pixel calculation and invokes it for each pixel */
+/* receives pointer on pixel calculation and invokes it for each pixel */
 void applyFuncOnImage(IplImage* src, IplImage* dest, int argc, int* argv, struct Pixel_t(pixelfunc)(IplImage*, int, int, int, int*))
 {
 	int x, y;

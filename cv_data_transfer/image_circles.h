@@ -38,3 +38,4 @@ void calculateCircles(struct Circle_t* array, struct Circle_t* top_left, struct 
 int bitSet(IplImage* image, struct Circle_t* circle, float treshold);
 
 #endif
+
