@@ -10,7 +10,7 @@
 
 #define MIN_CIRCLE_RADIUS 15
 
-/* used to treshold on blue tracking points */
+/* used to threshold on blue tracking points */
 /* b, g, r, radius */
 int g_tracking_values[] = { 0, 0, 0, 5, 5, 5 };
 
@@ -434,7 +434,7 @@ int main(int argc, char* argv[])
 		opencv_vars.dst = cvClone(frame);
 
 		/* filtering by required params*/
-		applyFuncOnImage(frame, opencv_vars.dst, 4, g_tracking_values, calculateTresholdByRGBValue);
+		applyFuncOnImage(frame, opencv_vars.dst, 4, g_tracking_values, calculatethresholdByRGBValue);
 		/* creating and adjusting mask */
 		cvCvtColor(opencv_vars.dst, opencv_vars.bw, CV_BGR2GRAY);
 		cvSmooth(opencv_vars.bw, opencv_vars.bw, CV_GAUSSIAN, 15, 0, 3, 3);

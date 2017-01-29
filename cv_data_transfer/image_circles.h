@@ -35,6 +35,6 @@ void getUniqCircles(struct Circle_t* inputArray, size_t inputAmount, int minRadi
 void calculateCircles(struct Circle_t* array, struct Circle_t* top_left, struct Circle_t* top_right, struct Circle_t* bottom_left, struct Circle_t* sync, struct Circle_t* data);
 
 /* returns 1 if bit represented by circle is set to 1 and 0 otherwise */
-int bitSet(IplImage* image, struct Circle_t* circle, float treshold);
+int bitSet(IplImage* image, struct Circle_t* circle, float threshold);
 
 #endif

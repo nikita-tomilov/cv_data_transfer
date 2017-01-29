@@ -113,12 +113,12 @@ void calculateCircles(struct Circle_t* array, struct Circle_t* top_left, struct 
 
 /* returns 1 if bit represented by circle is set to 1 and 0 otherwise */
 
-int bitSet(IplImage* image, struct Circle_t* circle, float treshold)
+int bitSet(IplImage* image, struct Circle_t* circle, float threshold)
 {
 	struct Pixel_t px;
 	float curval;
 	px = getPixel(image, circle->x, circle->y);
 	curval = (px.r + px.g + px.b) / 3.0f;
-	if (curval >= treshold) return (int)curval;
+	if (curval >= threshold) return (int)curval;
 	return 0;
 }

@@ -25,8 +25,8 @@ void setPixel(IplImage* img, int x, int y, struct Pixel_t px);
 /* recieves pointer on pixel calculation and invokes it for each pixel */
 void applyFuncOnImage(IplImage* src, IplImage* dest, int argc, int* argv, struct Pixel_t(pixelfunc)(IplImage*, int, int, int, int*));
 
-/* used to make treshold on RGB in required radius */
+/* used to make threshold on RGB in required radius */
 /* uses four arguments - r, g, b and radius in which point still counts */
-struct Pixel_t calculateTresholdByRGBValue(IplImage* img, int x, int y, int argc, int* argv);
+struct Pixel_t calculatethresholdByRGBValue(IplImage* img, int x, int y, int argc, int* argv);
 
 #endif

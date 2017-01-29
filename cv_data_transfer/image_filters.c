@@ -66,9 +66,9 @@ G = L
 R = S
 */
 
-/* used to make treshold on blue channel (blue or hue) */
+/* used to make threshold on blue channel (blue or hue) */
 /* uses two arguments - lower (0) and upper (1) bound */
-struct Pixel_t calculateBTresholdPixel(IplImage* img, int x, int y, int argc, int* argv)
+struct Pixel_t calculateBthresholdPixel(IplImage* img, int x, int y, int argc, int* argv)
 {
 	struct Pixel_t cur = getPixel(img, x, y);
 	if (cur.b >= argv[0] && cur.b <= argv[1]) return cur;
@@ -78,9 +78,9 @@ struct Pixel_t calculateBTresholdPixel(IplImage* img, int x, int y, int argc, in
 	return cur;
 }
 
-/* used to make treshold on RGB in required radius */
+/* used to make threshold on RGB in required radius */
 /* uses four arguments - r, g, b and radius in which point still counts */
-struct Pixel_t calculateTresholdByRGBValue(IplImage* img, int x, int y, int argc, int* argv)
+struct Pixel_t calculatethresholdByRGBValue(IplImage* img, int x, int y, int argc, int* argv)
 {
 	struct Pixel_t cur = getPixel(img, x, y);
 	struct Pixel_t ret;
