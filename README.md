@@ -39,7 +39,7 @@ Windows without VS2013, Linux, MacOS, other Unix-based OS
 
 ## Command-line parameters
 - -h for help
-- -o <output> for writing recieved bytes to file
+- -o <output> for writing received bytes to file
 - -v for full logs
 
 ## Coming soon
