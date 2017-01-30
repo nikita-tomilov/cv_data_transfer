@@ -88,7 +88,7 @@ struct launch_params_t getLaunchParams(int argc, char* argv[])
 					 https://github.com/Programmer74/cv_data_transfer \n\
 					 Additional parameters: \n\
 					 -h Show this help \n\
-					 -o <filename> - Write recieved bytes to file \n\
+					 -o <filename> - Write received bytes to file \n\
 					 -v Show all logs\n");
 				exit(0);
 				break;
@@ -152,7 +152,7 @@ struct opencv_stuff_t initOpenCVGui()
 	current.bw = cvCreateImage(cvSize(frame->width, frame->height), IPL_DEPTH_8U, 1); /* bw image used for finding circles */
 
 	/* initialising font for printing text */
-	cvInitFont(&(current.main_font), CV_FONT_HERSHEY_COMPLEX_SMALL, 1.0f, 1.0f, 0, 1, CV_AA);
+	cvInitFont(&(current.main_font), CV_FONT_HERSHEY_COMPLEX_SMALL, 1.0l, 1.0l, 0, 1, CV_AA);
 
 	/* adjusting trackbars */
 	cvCreateTrackbar("R", "settings", g_tracking_values, 255, NULL);
@@ -249,9 +249,9 @@ struct opencv_dataparsebuffs_t
 	int sync_timeout;
 	int data_timeout;
 
-	/* recieved data parsing */
-	int* recieved_bits;
-	int recieved_bits_count;
+	/* received data parsing */
+	int* received_bits;
+	int received_bits_count;
 	int is_data_transferring;
 	uint8_t incoming_value;
 	int current_parity;
@@ -272,9 +272,9 @@ struct opencv_dataparsebuffs_t initDataParsingBuffers()
 	current.sync_timeout = 0;
 	current.data_timeout = 0;
 
-	/* recieved data parsing */
-	current.recieved_bits = (int*)calloc(9, sizeof(int)); /* 8 + parity */
-	current.recieved_bits_count = 0;
+	/* received data parsing */
+	current.received_bits = (int*)calloc(9, sizeof(int)); /* 8 + parity */
+	current.received_bits_count = 0;
 	current.is_data_transferring = 0;
 	current.incoming_value = 0;
 	current.current_parity = 0;
@@ -334,8 +334,8 @@ void analyzeCapturedInfo(struct launch_params_t current_params, struct opencv_da
 		databuffs->sync_timeout = 10;
 		if (databuffs->is_data_transferring)
 		{
-			databuffs->recieved_bits[databuffs->recieved_bits_count] = 0;
-			databuffs->recieved_bits_count++;
+			databuffs->received_bits[databuffs->received_bits_count] = 0;
+			databuffs->received_bits_count++;
 		}
 	}
 	if (!databuffs->sync_state && databuffs->data_state)
@@ -346,7 +346,7 @@ void analyzeCapturedInfo(struct launch_params_t current_params, struct opencv_da
 		{
 			puts("Got starting marker; transferring began");
 			databuffs->is_data_transferring = 1;
-			databuffs->recieved_bits_count = 0;
+			databuffs->received_bits_count = 0;
 		}
 	}
 	if (databuffs->sync_state && databuffs->data_state)
@@ -354,14 +354,14 @@ void analyzeCapturedInfo(struct launch_params_t current_params, struct opencv_da
 		if (current_params.show_all_debug) puts("Both are enabled.");
 		if (databuffs->is_data_transferring)
 		{
-			databuffs->recieved_bits[databuffs->recieved_bits_count] = 1;
-			databuffs->recieved_bits_count++;
+			databuffs->received_bits[databuffs->received_bits_count] = 1;
+			databuffs->received_bits_count++;
 		}
 	}
 }
 
 /* void to parse and get byte from that captured info */
-int getCapturedByte(struct launch_params_t current_params, struct opencv_dataparsebuffs_t* databuffs, uint8_t* recieved_byte)
+int getCapturedByte(struct launch_params_t current_params, struct opencv_dataparsebuffs_t* databuffs, uint8_t* received_byte)
 {
 	int found = 0;
 	size_t i;
@@ -371,18 +371,18 @@ int getCapturedByte(struct launch_params_t current_params, struct opencv_datapar
 	databuffs->is_data_transferring = 0;
 	for (i = 0; i < 8; i++)
 	{
-		printf("%d", databuffs->recieved_bits[i]);
-		databuffs->incoming_value = databuffs->incoming_value * 2 + databuffs->recieved_bits[i];
-		databuffs->current_parity += databuffs->recieved_bits[i];
+		printf("%d", databuffs->received_bits[i]);
+		databuffs->incoming_value = databuffs->incoming_value * 2 + databuffs->received_bits[i];
+		databuffs->current_parity += databuffs->received_bits[i];
 	}
-	printf("\n> Parity recieved is %d.\n", databuffs->recieved_bits[8]);
+	printf("\n> Parity received is %d.\n", databuffs->received_bits[8]);
 	databuffs->current_parity = (databuffs->current_parity % 2 == 0 ? 0 : 1);
-	if (databuffs->current_parity == databuffs->recieved_bits[8])
+	if (databuffs->current_parity == databuffs->received_bits[8])
 	{
 
-		printf("> Recieved byte %d == '%c'\n", databuffs->incoming_value, (char)databuffs->incoming_value);
+		printf("> received byte %d == '%c'\n", databuffs->incoming_value, (char)databuffs->incoming_value);
 		puts("> Parity OK.");
-		*recieved_byte = databuffs->incoming_value;
+		*received_byte = databuffs->incoming_value;
 		found = 1;
 	}
 	else
@@ -390,7 +390,7 @@ int getCapturedByte(struct launch_params_t current_params, struct opencv_datapar
 		puts("> Parity FAILED");
 		found = 0;
 	}
-	databuffs->recieved_bits_count = 0;
+	databuffs->received_bits_count = 0;
 
 	return found;
 }
@@ -465,17 +465,17 @@ int main(int argc, char* argv[])
 		if (databuffs.data_timeout > 0) databuffs.data_timeout--;
 		analyzeCapturedInfo(current_params, &databuffs);
 		
-		/* byte recieved */
-		if (databuffs.recieved_bits_count == 9)
+		/* byte received */
+		if (databuffs.received_bits_count == 9)
 		{
-			uint8_t recieved;
+			uint8_t received;
 			int result;
 			
-			result = getCapturedByte(current_params, &databuffs, &recieved);
+			result = getCapturedByte(current_params, &databuffs, &received);
 			/* result already printed over there, but we need to save to file if needed */
 			if (result != 0 && current_params.write_to_file)
 			{
-				fwrite(&recieved, sizeof(uint8_t), 1, current_params.output_file);
+				fwrite(&received, sizeof(uint8_t), 1, current_params.output_file);
 				if (current_params.show_all_debug) puts("> Logged to file.");
 			}
 
@@ -485,7 +485,7 @@ int main(int argc, char* argv[])
 		if (is_abort_pressed)
 		{
 			puts("DATA TRANSFER ABORTED.");
-			databuffs.recieved_bits_count = 0;
+			databuffs.received_bits_count = 0;
 			is_abort_pressed = 0;
 		}
 
@@ -493,7 +493,7 @@ int main(int argc, char* argv[])
 		cvShowImage("capture", frame);
 		cvShowImage("filtered", opencv_vars.bw);
 
-		char c = cvWaitKey(33);
+		int c = cvWaitKey(33);
 		if (c == 27) { /* esc key pressed */
 			break;
 
