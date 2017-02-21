@@ -9,6 +9,7 @@
 #include "getopt.h"
 
 #define MIN_CIRCLE_RADIUS 15
+#define BIT_STATE_THRESHOLD 230
 
 /* used to threshold on blue tracking points */
 /* b, g, r, radius */
@@ -298,8 +299,8 @@ void captureAndDrawFancyGraph(struct opencv_stuff_t opencv_vars, struct opencv_c
 
 	if (found_data_frame)
 	{
-		databuffs->sync_buf[255] = bitSet(frame, &(circles.sync), 230);
-		databuffs->data_buf[255] = bitSet(frame, &(circles.data), 230);
+		databuffs->sync_buf[255] = bitSet(frame, &(circles.sync), BIT_STATE_THRESHOLD);
+		databuffs->data_buf[255] = bitSet(frame, &(circles.data), BIT_STATE_THRESHOLD);
 		databuffs->sync_buf_bckp[255] = databuffs->sync_buf[255];
 		databuffs->data_buf_bckp[255] = databuffs->data_buf[255];
 		if (databuffs->sync_buf[255])
