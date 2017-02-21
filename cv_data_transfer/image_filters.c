@@ -15,7 +15,7 @@ int abs(int x)
 struct Pixel_t getPixel(IplImage* img, int x, int y)
 {
 	struct Pixel_t px;
-	uchar* ptr = (uchar*)(img->imageData + y * img->widthStep);
+	uint8_t* ptr = (uint8_t*)(img->imageData + y * img->widthStep);
 	px.b = ptr[3 * x];
 	px.g = ptr[3 * x + 1];
 	px.r = ptr[3 * x + 2];
@@ -25,7 +25,7 @@ struct Pixel_t getPixel(IplImage* img, int x, int y)
 /* used to set pixel in image */
 void setPixel(IplImage* img, int x, int y, struct Pixel_t px)
 {
-	uchar* ptr = (uchar*)(img->imageData + y * img->widthStep);
+	uint8_t* ptr = (uint8_t*)(img->imageData + y * img->widthStep);
 	ptr[3 * x] = px.b;
 	ptr[3 * x + 1] = px.g;
 	ptr[3 * x + 2] = px.r;

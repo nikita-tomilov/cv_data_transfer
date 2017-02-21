@@ -42,9 +42,9 @@ void getAllCirlces(IplImage* img, struct Circle_t* buf, size_t* n)
 	for (i = 0; (i < hc_out_seq->total) && (i < MAX_CIRCLES); i++)
 	{
 		CV_READ_SEQ_ELEM(val, reader);
-		tmp_entry.x = val.ints[0];
-		tmp_entry.y = val.ints[1];
-		tmp_entry.r = val.ints[2];
+		tmp_entry.x = val.floats[0];
+		tmp_entry.y = val.floats[1];
+		tmp_entry.r = val.floats[2];
 		buf[i] = tmp_entry;
 	}
 	return;

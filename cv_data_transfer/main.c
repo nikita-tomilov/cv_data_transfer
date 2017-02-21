@@ -28,7 +28,7 @@ int getBitState(int* array, size_t delta)
 	size_t i;
 	for (i = 0; i < delta; i++)
 	{
-		if (array[255 - i] <= 10) return 0; //hole => bit not set now
+		if (array[255 - i] <= (BIT_STATE_THRESHOLD / 20)) return 0; //hole => bit not set now
 	}
 	for (i = 0; i < delta; i++)
 	{

@@ -13,7 +13,7 @@
 /* used to retrieve founded circles data */
 union CustomData {
 	char bytes[12];
-	float ints[3];
+	float floats[3];
 };
 
 /* used for founded circle info */
